@@ -412,7 +412,7 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
           <div className="flex flex-col items-center md:items-start">
             <h2 className="text-2xl font-bold mb-4 text-[#00342b]">Contact Us</h2>
             <div className="space-y-3 text-[#3f4945] text-sm font-medium">
-              <p className="flex items-center justify-center md:justify-start gap-2"><span className="material-symbols-outlined text-[#006493]">mail</span> pathersaathi@gmail.com</p>
+              <p className="flex items-center justify-center md:justify-start gap-2"><span className="material-symbols-outlined text-[#006493]">mail</span> support@pathersaathi.in</p>
               <p className="flex items-center justify-center md:justify-start gap-2"><span className="material-symbols-outlined text-[#006493]">call</span> +91 6002089037</p>
               <p className="flex items-center justify-center md:justify-start gap-2"><span className="material-symbols-outlined text-[#006493]">location_on</span> Silchar, Barak Valley, Assam</p>
             </div>

@@ -13,8 +13,8 @@ export const metadata: Metadata = {
     default: "Pather Saathi | Bus & Charter Booking in Barak Valley",
     template: "%s | Pather Saathi",
   },
-  description: "The premier fleet booking platform for Barak Valley, Assam. Book bus tickets, charter entire vehicles, and manage routes securely with Pather Saathi.",
-  keywords: ["bus booking", "charter booking", "Silchar to Guwahati", "Barak Valley", "Assam bus", "Pather Saathi", "fleet management"],
+  description: "The premier ultra-local fleet booking platform for Barak Valley. Book bus tickets, charter vehicles, and manage routes across Sribhumi, Silchar, and Hailakandi securely.",
+  keywords: ["bus booking Silchar", "Sribhumi bus", "Hailakandi transport", "Barak Valley fleet", "ultra-local transit", "Pather Saathi", "charter booking Sribhumi"],
   openGraph: {
     title: "Pather Saathi | Bus & Charter Booking in Barak Valley",
     description: "The premier fleet booking platform for Barak Valley, Assam. Book bus tickets and charter entire vehicles securely.",

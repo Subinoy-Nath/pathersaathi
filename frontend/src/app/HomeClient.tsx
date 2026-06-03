@@ -338,7 +338,6 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                         width={600} 
                         height={400} 
                         className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500" 
-                        unoptimized
                       />
                     ) : (
                       <span className="material-symbols-outlined text-6xl text-gray-300">directions_bus</span>
@@ -467,7 +466,7 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
           </div>
           <div className="flex flex-col items-center justify-center">
             <div className="bg-white p-2 shadow-sm mb-4 border border-[#e1e3e4] rounded-2xl">
-              <Image src="/images/logo.jpeg" alt="Pather Saathi" width={240} height={160} className="object-contain w-[240px] h-auto rounded-xl" unoptimized />
+              <Image src="/images/logo.jpeg" alt="Pather Saathi" width={240} height={160} className="object-contain w-[240px] h-auto rounded-xl" />
             </div>
           </div>
         </div>

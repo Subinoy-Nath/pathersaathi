@@ -412,17 +412,17 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                 <h4 className="text-2xl font-bold">The Pather Saathi App</h4>
                 <p className="text-[#e0f2f1] text-sm md:text-base mt-2 max-w-md">Book tickets and manage your trips seamlessly from your phone.</p>
               </div>
-              <div className="z-10 flex flex-col sm:flex-row gap-4">
-                <div className="bg-[#00342b]/50 text-white/60 border border-white/20 px-5 py-3 rounded-xl flex items-center gap-3 cursor-not-allowed transition">
-                  <span className="material-symbols-outlined text-3xl opacity-70">play_store_installed</span>
-                  <div className="text-xs leading-tight text-left">COMING TO <br/><span className="text-base font-bold">Google Play</span></div>
+              <div className="z-10 flex flex-col sm:flex-row gap-4 w-full md:w-auto mt-4 md:mt-0">
+                <div className="bg-[#00342b]/50 text-white/60 border border-white/20 px-5 py-3 rounded-xl flex items-center justify-center sm:justify-start gap-3 cursor-not-allowed transition w-full sm:w-auto">
+                  <span className="material-symbols-outlined text-3xl opacity-70 shrink-0">play_store_installed</span>
+                  <div className="text-xs leading-tight text-left">COMING TO <br/><span className="text-base font-bold whitespace-nowrap">Google Play</span></div>
                 </div>
-                <div className="bg-[#00342b]/50 text-white/60 border border-white/20 px-5 py-3 rounded-xl flex items-center gap-3 cursor-not-allowed transition">
-                  <span className="material-symbols-outlined text-3xl opacity-70">phone_iphone</span>
-                  <div className="text-xs leading-tight text-left">COMING TO <br/><span className="text-base font-bold">App Store</span></div>
+                <div className="bg-[#00342b]/50 text-white/60 border border-white/20 px-5 py-3 rounded-xl flex items-center justify-center sm:justify-start gap-3 cursor-not-allowed transition w-full sm:w-auto">
+                  <span className="material-symbols-outlined text-3xl opacity-70 shrink-0">phone_iphone</span>
+                  <div className="text-xs leading-tight text-left">COMING TO <br/><span className="text-base font-bold whitespace-nowrap">App Store</span></div>
                 </div>
               </div>
-              <span className="material-symbols-outlined absolute -right-10 -bottom-20 text-[250px] text-white/10 hidden lg:block">smartphone</span>
+              <span className="material-symbols-outlined absolute -right-10 -bottom-20 text-[250px] text-white/10 hidden lg:block pointer-events-none">smartphone</span>
             </div>
           </div>
         </div>

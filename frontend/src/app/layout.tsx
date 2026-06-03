@@ -8,8 +8,34 @@ const geistSans = { variable: "--font-geist-sans" };
 const geistMono = { variable: "--font-geist-mono" };
 
 export const metadata: Metadata = {
-  title: "Pather Saathi",
-  description: "Fleet booking platform for Barak Valley",
+  metadataBase: new URL("https://pathersaathi.in"),
+  title: {
+    default: "Pather Saathi | Bus & Charter Booking in Barak Valley",
+    template: "%s | Pather Saathi",
+  },
+  description: "The premier fleet booking platform for Barak Valley, Assam. Book bus tickets, charter entire vehicles, and manage routes securely with Pather Saathi.",
+  keywords: ["bus booking", "charter booking", "Silchar to Guwahati", "Barak Valley", "Assam bus", "Pather Saathi", "fleet management"],
+  openGraph: {
+    title: "Pather Saathi | Bus & Charter Booking in Barak Valley",
+    description: "The premier fleet booking platform for Barak Valley, Assam. Book bus tickets and charter entire vehicles securely.",
+    url: "https://pathersaathi.in",
+    siteName: "Pather Saathi",
+    images: [
+      {
+        url: "/images/logo.jpeg",
+        width: 800,
+        height: 600,
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pather Saathi",
+    description: "Book bus tickets and charter entire vehicles securely in Barak Valley.",
+    images: ["/images/logo.jpeg"],
+  },
 };
 
 export default function RootLayout({

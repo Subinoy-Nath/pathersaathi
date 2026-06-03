@@ -316,7 +316,7 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                         alt={bus.name} 
                         width={600} 
                         height={400} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500" 
                         unoptimized
                       />
                     ) : (
@@ -418,11 +418,9 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
             </div>
           </div>
           <div className="flex flex-col items-center justify-center">
-            <div className="bg-white p-1 rounded-full shadow-md mb-4 border border-[#e1e3e4]">
-              <Image src="/images/logo.jpeg" alt="Pather Saathi" width={80} height={80} className="rounded-full object-cover w-20 h-20" unoptimized />
+            <div className="bg-white p-2 shadow-sm mb-4 border border-[#e1e3e4] rounded-2xl">
+              <Image src="/images/logo.jpeg" alt="Pather Saathi" width={240} height={160} className="object-contain w-[240px] h-auto rounded-xl" unoptimized />
             </div>
-            <h3 className="text-xl font-bold text-[#00342b] tracking-tight">Pather Saathi</h3>
-            <p className="text-[#006493] text-xs font-bold mt-1 uppercase tracking-widest">Barak Valley&apos;s Journey Partner</p>
           </div>
         </div>
       </footer>

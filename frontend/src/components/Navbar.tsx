@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { logout } from '@/app/auth/actions'
 import { useState } from 'react'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 
 type NavbarProps = {
@@ -13,13 +14,22 @@ type NavbarProps = {
 
 export default function Navbar({ user, role }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const pathname = usePathname()
+
+  const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (pathname === '/') {
+      e.preventDefault()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      setIsMenuOpen(false)
+    }
+  }
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-[0_8px_32px_0_rgba(0,77,64,0.08)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="flex-shrink-0 flex items-center gap-3 group">
+            <Link href="/" onClick={handleHomeClick} className="flex-shrink-0 flex items-center gap-3 group">
               <Image 
                 src="/images/logo.jpeg" 
                 alt="Pather Saathi Logo" 
@@ -33,7 +43,7 @@ export default function Navbar({ user, role }: NavbarProps) {
             
             {/* Desktop Navigation */}
             <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
-              <Link href="/" className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-blue-500 text-sm font-medium text-gray-500 hover:text-gray-900 transition">
+              <Link href="/" onClick={handleHomeClick} className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-blue-500 text-sm font-medium text-gray-500 hover:text-gray-900 transition">
                 Home
               </Link>
               {user && (
@@ -105,7 +115,7 @@ export default function Navbar({ user, role }: NavbarProps) {
       {isMenuOpen && (
         <div className="sm:hidden absolute w-full left-0 top-[64px] border-b border-gray-100 bg-white shadow-xl z-40 pb-4">
           <div className="pt-2 pb-3 space-y-1">
-            <Link onClick={() => setIsMenuOpen(false)} href="/" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-blue-500">
+            <Link onClick={(e) => { handleHomeClick(e); setIsMenuOpen(false); }} href="/" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-blue-500">
               Home
             </Link>
             {user && (

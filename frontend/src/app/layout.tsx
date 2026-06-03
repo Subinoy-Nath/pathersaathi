@@ -56,6 +56,32 @@ export default function RootLayout({
             -webkit-font-feature-settings: "liga" 1;
           }
         `}</style>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "Pather Saathi",
+              "url": "https://pathersaathi.in",
+              "publisher": {
+                "@type": "Organization",
+                "name": "Pather Saathi",
+                "url": "https://pathersaathi.in",
+                "logo": "https://pathersaathi.in/images/logo.jpeg",
+                "areaServed": ["Barak Valley", "Silchar", "Sribhumi", "Hailakandi"],
+                "contactPoint": {
+                  "@type": "ContactPoint",
+                  "telephone": "+91-6002089037",
+                  "contactType": "customer support",
+                  "email": "support@pathersaathi.in",
+                  "areaServed": "IN",
+                  "availableLanguage": ["English", "Bengali", "Assamese"]
+                }
+              }
+            })
+          }}
+        />
       </head>
       <body className="min-h-full flex flex-col bg-gray-50">
         <NavbarServer />

@@ -10,7 +10,7 @@
 ---
 
 ## Current Deployment Status
-* **Database**: Supabase Cloud project. 18 migrations applied (core schema through whole-vehicle RLS and atomic updates). Auth trigger `handle_new_user` active with field whitelisting.
+* **Database**: Supabase Cloud project. 20 migrations applied (core schema through RLS recursion fix). Auth trigger `handle_new_user` active with field whitelisting.
 * **Frontend**: Next.js 16.2.6 (Turbopack). Build passes with zero type errors. All routes compile successfully.
 * **Auth Status**: Working. Sign up handles user/metadata copying via idempotent PostgreSQL trigger with whitelisted fields (`name`, `phone_number`).
 * **Booking Status**: End-to-end operational for both tickets and whole-vehicle bookings.
@@ -23,9 +23,9 @@
 ---
 
 ## Architecture Overview
-* **System Architecture**: Two-tier client-serverless architecture. Next.js 15+ (App Router) serves as the full-stack framework communicating with Supabase (PostgreSQL 14.5).
+* **System Architecture**: Two-tier client-serverless architecture. Next.js 16 (App Router) serves as the full-stack framework communicating with Supabase (PostgreSQL 14.5).
 * **Frontend Architecture**: React 19 Client Components (`"use client"`) handle interactivity; Server Components (`page.tsx`) perform initial secure data fetching. Server Actions (`actions.ts`) encapsulate form submissions securely. Include global generic loading and error boundaries.
-* **Backend Architecture**: Next.js Server Actions execute securely on Vercel Edge/Serverless functions, relying on Supabase for the database layer. In-memory sliding window rate-limiting protects critical actions.
+* **Backend Architecture**: Next.js Server Actions execute securely on Vercel Edge/Serverless functions, relying on Supabase for the database layer. Upstash Redis sliding window rate-limiting protects booking creation actions (3 req/60s per user, graceful degradation when unconfigured).
 * **Supabase Architecture**: Relational PostgreSQL. Uses Supabase Auth, Row-Level Security (RLS) for data isolation, and Foreign Key constraints for relational integrity. Scheduled tasks handled by `pg_cron`.
 * **Authentication Flow**: Uses Supabase SSR (`@supabase/ssr`). Credentials submitted via Next.js server actions invoke `signInWithPassword` or `signUp`. Session stored securely via HTTP-only cookies.
 * **Authorization Model**: Custom Role-Based Access Control (RBAC). `public.users.role` defines whether a user is an `operator`, `customer`, or `admin`. Verified operators access `/operator`. Data isolation enforced by PostgreSQL RLS.
@@ -36,14 +36,14 @@
 
 ### `users`
 * **Purpose**: Extended profile metadata for authenticated users.
-* **Columns**: `id` (UUID, PK, matches `auth.users`), `name`, `email`, `phone_number`, `whatsapp_number`, `role` (enum: admin/operator/customer), `verification_status` (enum: unverified/verified/suspended), `operator_business_details` (JSONB).
+* **Columns**: `id` (UUID, PK, matches `auth.users`), `name`, `email`, `phone_number`, `whatsapp_number`, `role` (enum: operator/customer), `verification_status` (enum: unverified/verified/suspended), `operator_business_details` (JSONB).
 * **RLS Policies**: Users can read/update their own profile. Privilege escalation trigger blocks changes to `role` and `verification_status` by authenticated users.
 * **Security**: `prevent_role_escalation()` trigger fires BEFORE UPDATE. Only service_role/postgres can modify `role` or `verification_status`.
 
 ### `locations`
 * **Purpose**: Defines pickup and destination points.
 * **Columns**: `id` (UUID, PK), `name`, `description`.
-* **RLS Policies**: Public read (active only). No client-side insert/update/delete.
+* **RLS Policies**: Public read (non-deleted, `deleted_at IS NULL`). No client-side insert/update/delete.
 
 ### `vehicles`
 * **Purpose**: Fleet inventory managed by operators.
@@ -90,6 +90,7 @@
 | `log_booking_status_change()` | SECURITY DEFINER | Trigger function: auto-inserts `booking_events` on status change. |
 | `cancel_booking_atomic(booking_id, cust_id)` | SECURITY INVOKER | Atomically updates status to cancelled and restores seats for the customer. |
 | `update_booking_status_atomic(...)` | SECURITY INVOKER | Atomically updates status (approve/reject/cancel) and restores seats for the operator. |
+| `user_owns_booking(booking_uuid)` | SECURITY DEFINER | Helper to check booking ownership without RLS recursion. Used in `booking_vehicles` policies. |
 
 ---
 
@@ -115,8 +116,8 @@
 | Route | Purpose | Components | API / Server Actions | Permissions |
 |-------|---------|------------|----------------------|-------------|
 | `/` | Discovery & Booking | `HomeClient.tsx`, `page.tsx` | Supabase Select, `createTicketBooking`, `createWholeVehicleBooking` | Public |
-| `/login` | Auth (Login + Signup toggle) | `login/page.tsx` | `login`, `signup` | Public |
-| `/operator` | Operator Dashboard | `operator/page.tsx` | Supabase Join Queries, `updateBookingStatus` | `operator` role |
+| `/login` | Auth (Login + Signup toggle) | `LoginForm.tsx`, `login/page.tsx`, `login/actions.ts` | `login`, `signup` | Public |
+| `/operator` | Operator Dashboard | `operator/page.tsx`, `BookingActionButtons.tsx` | Supabase Join Queries, `updateBookingStatus` (via `update_booking_status_atomic` RPC) | `operator` role |
 | `/operator/fleet` | Fleet Management | `FleetClient.tsx`, `fleet/page.tsx` | `upsertVehicle`, `upsertRoute`, `upsertSchedule` | `operator` role |
 | `/bookings` | Customer Dashboard | `bookings/page.tsx`, `CustomerCancelButton.tsx` | Supabase Join Queries, `cancelBooking` | Authenticated |
 | `/profile` | User Profile | `ProfileForm.tsx`, `profile/page.tsx` | `updateProfile`, `updatePassword` | Authenticated |
@@ -202,9 +203,11 @@ Protected routes: `/operator`, `/dashboard`, `/profile`, `/bookings` — all red
 | `000013_atomic_seat_booking.sql` | `book_seats()` + `restore_seats()` atomic PostgreSQL functions |
 | `000014_booking_events.sql` | `booking_events` audit table + `log_booking_status_change()` trigger |
 | `000015_booking_expiry.sql` | `expire_stale_bookings()` function for scheduled cleanup |
-| `000016_booking_vehicles_rls.sql` | Insert policy for customers on junction table |
+| `000016_atomic_booking_status.sql` | `update_booking_status_atomic()` + `cancel_booking_atomic()` functions |
+| `000016_whole_vehicle_booking_rls.sql` | Insert policy for customers on junction table |
 | `000017_atomic_booking_update.sql` | Operator state transitions moved to atomic RPC functions |
 | `000018_enable_pg_cron.sql` | Automated hourly cron schedule for stale booking cleanup |
+| `000019_fix_rls_recursion.sql` | `user_owns_booking()` helper to break RLS circular dependency on `booking_vehicles` |
 
 ---
 

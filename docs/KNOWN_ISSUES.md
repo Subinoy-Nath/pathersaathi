@@ -5,7 +5,7 @@
 
 ---
 
-## D-01: `users.role` enum includes phantom `admin` value
+## D-01: `users.role` enum includes phantom `admin` value — ✅ FIXED
 
 | Field | Detail |
 |-------|--------|
@@ -44,7 +44,7 @@
 
 ---
 
-## D-04: Locations RLS — "active only" wording is misleading
+## D-04: Locations RLS — "active only" wording is misleading — ✅ FIXED
 
 | Field | Detail |
 |-------|--------|
@@ -68,7 +68,7 @@
 
 ---
 
-## D-06: `/login` missing `LoginForm.tsx` from component listing
+## D-06: `/login` missing `LoginForm.tsx` from component listing — ✅ FIXED
 
 | Field | Detail |
 |-------|--------|
@@ -80,7 +80,7 @@
 
 ---
 
-## D-07: `BookingActionButtons.tsx` not in frontend inventory
+## D-07: `BookingActionButtons.tsx` not in frontend inventory — ✅ FIXED
 
 | Field | Detail |
 |-------|--------|
@@ -92,7 +92,7 @@
 
 ---
 
-## D-08: "Next.js 15+" inconsistent with actual "16.2.6"
+## D-08: "Next.js 15+" inconsistent with actual "16.2.6" — ✅ FIXED
 
 | Field | Detail |
 |-------|--------|

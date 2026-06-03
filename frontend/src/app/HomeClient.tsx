@@ -428,7 +428,34 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
         </div>
       </section>
 
-      <footer className="bg-white text-[#191c1d] px-5 lg:px-10 py-12 md:py-16 border-t border-[#d8dadb]">
+      {/* AI SEO FAQ Section */}
+      <section className="py-16 bg-white border-t border-[#bfc9c4]/30">
+        <div className="container mx-auto px-5 lg:px-10 max-w-4xl">
+          <h2 className="text-3xl font-bold text-[#00342b] mb-10 text-center">Frequently Asked Questions</h2>
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-xl font-bold text-[#006493] mb-2">What is Pather Saathi?</h3>
+              <p className="text-[#3f4945] leading-relaxed">
+                Pather Saathi is the premier ultra-local fleet booking platform connecting the regions of Sribhumi, Silchar, and Hailakandi in Barak Valley, Assam. We provide secure online seat booking and whole vehicle chartering with verified operators to ensure safe and reliable journeys.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-[#006493] mb-2">How do I book a bus in Barak Valley?</h3>
+              <p className="text-[#3f4945] leading-relaxed">
+                To book a bus in Barak Valley through Pather Saathi, simply create a free account, select your pickup and destination locations, choose your travel date, and confirm your seat. Your booking will be instantly sent to the operator for final confirmation.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-[#006493] mb-2">Can I charter a whole vehicle in Silchar or Sribhumi?</h3>
+              <p className="text-[#3f4945] leading-relaxed">
+                Yes, Pather Saathi allows you to easily request whole vehicle charters in Silchar, Sribhumi, and Hailakandi. Navigate to the Charter section on our homepage, select your travel dates, and submit a request to our verified local fleet operators.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="bg-[#f8fafb] text-[#191c1d] px-5 lg:px-10 py-12 md:py-16 border-t border-[#d8dadb]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-10">
           <div className="flex flex-col items-center md:items-start">
             <h2 className="text-2xl font-bold mb-4 text-[#00342b]">Contact Us</h2>

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Database } from '@/types/database.types';
 import { createTicketBooking, createWholeVehicleBooking } from "./actions";
 
@@ -122,11 +123,21 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
             </div>
             
             <form action={handleTicketBooking} className="space-y-6">
-              {ticketResult?.error && (
+              {ticketResult?.error && ticketResult.error === 'AUTH_REQUIRED' ? (
+                <div className="p-6 bg-[#004d40]/5 border border-[#004d40]/10 rounded-2xl flex flex-col items-center text-center shadow-sm">
+                  <span className="material-symbols-outlined text-4xl text-[#006493] mb-2">account_circle</span>
+                  <h3 className="text-xl font-bold text-[#00342b] mb-2">Almost there!</h3>
+                  <p className="text-[#3f4945] text-sm mb-5">You need an account to secure your booking and receive driver details.</p>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <Link href="/login" className="bg-[#00affe] text-white px-6 py-2.5 rounded-xl font-bold shadow-sm hover:bg-[#009ae0] transition text-center w-full sm:w-auto">Log In</Link>
+                    <Link href="/login?mode=signup" className="bg-white text-[#006493] border-2 border-[#006493]/20 px-6 py-2.5 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition text-center w-full sm:w-auto">Create Account</Link>
+                  </div>
+                </div>
+              ) : ticketResult?.error ? (
                 <div className="p-4 bg-red-50 text-red-700 rounded-xl font-medium">
                   {ticketResult.error}
                 </div>
-              )}
+              ) : null}
               
               {ticketResult?.success ? (
                 <div className="p-6 bg-green-50 rounded-xl flex flex-col items-center text-center">
@@ -261,11 +272,21 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
               </div>
             </div>
 
-            {busResult?.error && (
+            {busResult?.error && busResult.error === 'AUTH_REQUIRED' ? (
+              <div className="col-span-1 md:col-span-2 p-6 bg-[#004d40]/5 border border-[#004d40]/10 rounded-2xl flex flex-col items-center text-center shadow-sm">
+                <span className="material-symbols-outlined text-4xl text-[#006493] mb-2">account_circle</span>
+                <h3 className="text-xl font-bold text-[#00342b] mb-2">Almost there!</h3>
+                <p className="text-[#3f4945] text-sm mb-5">You need an account to submit charter requests and coordinate with operators.</p>
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                  <Link href="/login" className="bg-[#00affe] text-white px-6 py-2.5 rounded-xl font-bold shadow-sm hover:bg-[#009ae0] transition text-center w-full sm:w-auto">Log In</Link>
+                  <Link href="/login?mode=signup" className="bg-white text-[#006493] border-2 border-[#006493]/20 px-6 py-2.5 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition text-center w-full sm:w-auto">Create Account</Link>
+                </div>
+              </div>
+            ) : busResult?.error ? (
               <div className="col-span-1 md:col-span-2 p-4 bg-red-50 text-red-700 rounded-xl font-medium">
                 {busResult.error}
               </div>
-            )}
+            ) : null}
 
             {busResult?.success && (
               <div className="col-span-1 md:col-span-2 p-6 bg-green-50 rounded-xl flex flex-col items-center">

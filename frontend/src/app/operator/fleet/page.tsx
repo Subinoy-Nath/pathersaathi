@@ -111,7 +111,7 @@ export default async function FleetPage() {
   const allRoutes = [...(ownedRoutes || []), ...(globalRoutes || [])]
 
   return (
-    <div className="bg-[#f8fafb] text-[#191c1d] min-h-screen">
+    <div className="bg-[#f8fafb] text-[#191c1d] min-h-screen pt-20">
       <div className="flex min-h-[calc(100vh-80px)]">
         {/* Sidebar Navigation (Desktop) */}
         <aside className="hidden md:flex flex-col h-auto w-80 bg-white p-4 space-y-4 border-r border-[#bfc9c4]/20 shadow-sm">
@@ -137,13 +137,19 @@ export default async function FleetPage() {
 
         {/* Main Content Area */}
         <main className="flex-1 p-5 md:p-8 space-y-8 pb-32 md:pb-12">
+          {/* Mobile Profile Card */}
+          <div className="md:hidden flex flex-col gap-1 p-5 bg-gradient-to-r from-[#00342b] to-[#004d40] rounded-xl shadow-lg text-white mb-2">
+            <span className="text-xl font-bold capitalize">{profile?.role}</span>
+            <span className="text-sm font-medium text-[#afefdd]">Pather Saathi Partner</span>
+          </div>
+
           {/* Header Section */}
           <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <h1 className="text-3xl lg:text-4xl font-bold text-[#00342b]">Fleet Management</h1>
               <p className="text-base font-medium text-[#3f4945] mt-1">Manage your vehicles, routes, and schedules</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Link href="/operator" className="glass-card flex items-center gap-2 px-6 py-2.5 rounded-xl text-[#00342b] border border-[#00342b]/10 hover:bg-[#004d40]/5 transition-all">
                 <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                 <span className="font-semibold text-sm">Dashboard</span>

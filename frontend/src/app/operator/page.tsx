@@ -115,7 +115,7 @@ export default async function OperatorDashboard() {
   }
 
   return (
-    <div className="bg-[#f8fafb] text-[#191c1d] min-h-screen">
+    <div className="bg-[#f8fafb] text-[#191c1d] min-h-screen pt-20">
       <div className="flex min-h-[calc(100vh-80px)]">
         {/* Sidebar Navigation (Desktop) */}
         <aside className="hidden md:flex flex-col h-auto w-80 bg-white p-4 space-y-4 border-r border-[#bfc9c4]/20 shadow-sm">
@@ -141,13 +141,19 @@ export default async function OperatorDashboard() {
 
         {/* Main Content Area */}
         <main className="flex-1 p-5 md:p-8 space-y-8 pb-32 md:pb-12">
+          {/* Mobile Profile Card */}
+          <div className="md:hidden flex flex-col gap-1 p-5 bg-gradient-to-r from-[#00342b] to-[#004d40] rounded-xl shadow-lg text-white mb-2">
+            <span className="text-xl font-bold capitalize">{profile.role}</span>
+            <span className="text-sm font-medium text-[#afefdd]">Pather Saathi Partner</span>
+          </div>
+
           {/* Header Section */}
           <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <h1 className="text-3xl lg:text-4xl font-bold text-[#00342b]">Operator Dashboard</h1>
               <p className="text-base font-medium text-[#3f4945] mt-1">Welcome back, <span className="font-bold text-[#00342b]">{profile.name}</span></p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Link href="/" className="glass-card flex items-center gap-2 px-6 py-2.5 rounded-xl text-[#00342b] border border-[#00342b]/10 hover:bg-[#004d40]/5 transition-all">
                 <span className="material-symbols-outlined text-[20px]">visibility</span>
                 <span className="font-semibold text-sm">Live Site</span>
@@ -169,13 +175,13 @@ export default async function OperatorDashboard() {
             </div>
 
             {(!vehicles || vehicles.length === 0) ? (
-              <div className="border-2 border-dashed border-[#bfc9c4]/50 p-10 rounded-xl flex flex-col items-center justify-center gap-3 text-[#3f4945] hover:bg-[#f2f4f5] transition-colors group">
-                <div className="w-16 h-16 rounded-full bg-[#eceeef] flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <span className="material-symbols-outlined text-[40px] text-[#00342b]">add_circle</span>
+              <div className="glass-card electric-glow border border-[#00affe]/30 p-10 rounded-xl flex flex-col items-center justify-center gap-4 text-[#3f4945] hover:bg-[#f8fafb] transition-colors group shadow-sm">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#00affe]/20 to-[#004d40]/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300">
+                  <span className="material-symbols-outlined text-[48px] text-[#006493]">add_circle</span>
                 </div>
-                <span className="font-semibold text-base">Add New Vehicle</span>
-                <p className="text-sm text-center max-w-sm">You haven&apos;t registered any vehicles yet. Click below to add your first bus to the fleet.</p>
-                <Link href="/operator/fleet" className="mt-2 bg-[#00342b] text-white px-6 py-2 rounded-lg font-medium hover:bg-black/90 transition">
+                <span className="font-bold text-xl text-[#00342b]">Add New Vehicle</span>
+                <p className="text-sm text-center max-w-sm mb-2 text-[#3f4945]">You haven&apos;t registered any vehicles yet. Click below to add your first bus to the fleet and start accepting bookings.</p>
+                <Link href="/operator/fleet" className="bg-[#00342b] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#004d40] hover:shadow-lg transition-all duration-300">
                   Manage Fleet
                 </Link>
               </div>
@@ -226,13 +232,13 @@ export default async function OperatorDashboard() {
               <div className="overflow-x-auto glass-scroll">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-[#00342b]/5 border-b border-[#bfc9c4]/30">
-                      <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Reference</th>
-                      <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Customer</th>
-                      <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Trip Details</th>
-                      <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Date</th>
-                      <th className="px-6 py-4 text-sm text-[#00342b] font-bold text-center">Seats</th>
-                      <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Status & Actions</th>
+                    <tr className="bg-[#e6e8e9] border-b border-[#bfc9c4]/50">
+                      <th className="px-6 py-4 text-sm text-[#00342b] font-bold uppercase tracking-wider">Reference</th>
+                      <th className="px-6 py-4 text-sm text-[#00342b] font-bold uppercase tracking-wider">Customer</th>
+                      <th className="px-6 py-4 text-sm text-[#00342b] font-bold uppercase tracking-wider">Trip Details</th>
+                      <th className="px-6 py-4 text-sm text-[#00342b] font-bold uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-4 text-sm text-[#00342b] font-bold text-center uppercase tracking-wider">Seats</th>
+                      <th className="px-6 py-4 text-sm text-[#00342b] font-bold uppercase tracking-wider">Status & Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#bfc9c4]/20">

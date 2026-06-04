@@ -94,3 +94,18 @@ skills-lock.json
 # ───────────────────────────────────────────
 supabase/.branches/
 supabase/.temp/
+
+# ───────────────────────────────────────────
+# LaTeX
+# ───────────────────────────────────────────
+*.aux
+*.bbl
+*.blg
+*.lof
+*.log
+*.lot
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz

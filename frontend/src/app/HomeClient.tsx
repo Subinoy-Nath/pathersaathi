@@ -25,7 +25,8 @@ type BookingResult = {
 
 export default function HomeClient({ locations, vehicles }: HomeClientProps) {
   const [selectedBuses, setSelectedBuses] = useState<string[]>([]);
-  
+  const [selectedOccasion, setSelectedOccasion] = useState<string>('');
+
   const [ticketLoading, setTicketLoading] = useState(false);
   const [ticketResult, setTicketResult] = useState<BookingResult | null>(null);
 
@@ -37,8 +38,8 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
   const toggleBusSelection = (busId: string) => {
     setSelectedBuses((prev) =>
       prev.includes(busId)
-      ? prev.filter((id) => id !== busId)
-      : [...prev, busId]
+        ? prev.filter((id) => id !== busId)
+        : [...prev, busId]
     );
   };
 
@@ -82,37 +83,41 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
   };
 
   return (
-    <main className="pt-0 pb-24 font-sans text-[#191c1d]">
+    <main className="pt-0 font-sans text-[#191c1d]">
       {/* Hero Section with Map Gradient */}
-      <section className="relative min-h-[650px] flex items-center justify-center overflow-hidden pt-16">
+      <section className="relative min-h-[650px] lg:min-h-screen flex items-center justify-center overflow-hidden pt-16 pb-16">
         {/* Dynamic Gradient Background */}
         <div className="absolute inset-0 primary-gradient opacity-10"></div>
         <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, #00affe 0%, transparent 50%), radial-gradient(circle at 80% 80%, #004d40 0%, transparent 50%)" }}></div>
-        
+
         <div className="container mx-auto px-5 lg:px-10 z-10 grid lg:grid-cols-2 gap-12 items-center relative">
-          <div className="space-y-6 pt-10 lg:pt-0 text-center lg:text-left">
-            <h1 className="text-4xl md:text-6xl font-bold leading-tight text-[#00342b] tracking-tight">
+          <div className="space-y-8 pt-10 lg:pt-0 text-center lg:text-left">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-[1.1] text-[#00342b] tracking-tight">
               Your Trusted <span className="text-[#006493]">Bus Booking</span> Platform.
             </h1>
-            <p className="text-lg text-[#3f4945] max-w-lg mx-auto lg:mx-0">
+            <p className="text-lg lg:text-xl text-[#3f4945] max-w-xl mx-auto lg:mx-0 leading-relaxed">
               Easy and reliable bus ticket booking across Silchar and Barak Valley. Safe, comfortable journeys every time.
             </p>
             <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full glass border border-white/40 shadow-sm">
-                <span className="material-symbols-outlined text-[#006493]">verified_user</span>
-                <span className="text-sm font-semibold text-[#00342b]">Verified Buses</span>
+              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full glass border border-white/40 shadow-sm hover:scale-105 transition-transform cursor-default">
+                <span className="material-symbols-outlined text-[#006493] text-[22px]">verified_user</span>
+                <span className="text-sm lg:text-base font-semibold text-[#00342b]">Verified Buses</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full glass border border-white/40 shadow-sm">
-                <span className="material-symbols-outlined text-[#006493]">task_alt</span>
-                <span className="text-sm font-semibold text-[#00342b]">Instant Booking</span>
+              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full glass border border-white/40 shadow-sm hover:scale-105 transition-transform cursor-default">
+                <span className="material-symbols-outlined text-[#006493] text-[22px]">task_alt</span>
+                <span className="text-sm lg:text-base font-semibold text-[#00342b]">Instant Booking</span>
+              </div>
+              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full glass border border-white/40 shadow-sm hover:scale-105 transition-transform cursor-default">
+                <span className="material-symbols-outlined text-[#006493] text-[22px]">support_agent</span>
+                <span className="text-sm lg:text-base font-semibold text-[#00342b]">24/7 Support</span>
               </div>
             </div>
             <button
               type="button"
               onClick={scrollToBuses}
-              className="mt-6 px-8 py-3 rounded-full border border-[#006493] text-[#006493] font-semibold hover:bg-[#006493]/5 transition-colors"
+              className="group mt-2 px-10 py-4 rounded-full border-2 border-[#006493] text-[#006493] font-bold text-base lg:text-lg hover:bg-[#006493] hover:text-white transition-all duration-300 shadow-sm flex items-center justify-center gap-2"
             >
-              Book a Whole Bus
+              Book a Whole Bus <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
             </button>
           </div>
 
@@ -121,7 +126,7 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
             <div className="absolute -top-4 -right-4 bg-[#00affe] text-[#003f5f] px-4 py-1 rounded-full text-xs font-bold shadow-lg uppercase tracking-wider">
               Pre-book & Save
             </div>
-            
+
             <form action={handleTicketBooking} className="space-y-6">
               {ticketResult?.error && ticketResult.error === 'AUTH_REQUIRED' ? (
                 <div className="p-6 bg-[#004d40]/5 border border-[#004d40]/10 rounded-2xl flex flex-col items-center text-center shadow-sm">
@@ -138,12 +143,12 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                   {ticketResult.error}
                 </div>
               ) : null}
-              
+
               {ticketResult?.success ? (
                 <div className="p-6 bg-green-50 rounded-xl flex flex-col items-center text-center">
                   <h3 className="text-2xl font-bold text-green-800 mb-2">Booking Confirmed!</h3>
                   <p className="text-green-700 mb-4">Reference: <strong>{ticketResult.booking_reference}</strong></p>
-                  <a 
+                  <a
                     href={`https://wa.me/${(ticketResult.operator_whatsapp || '').replace(/[^0-9]/g, '')}?text=Hello,%20I%20have%20booked%20a%20ticket%20on%20Pather%20Saathi.%20My%20booking%20reference%20is%20${ticketResult.booking_reference}.`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -151,8 +156,8 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                   >
                     Confirm via WhatsApp
                   </a>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setTicketResult(null)}
                     className="mt-4 text-sm text-[#3f4945] font-semibold hover:underline"
                   >
@@ -164,9 +169,9 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label htmlFor="pickup" className="text-sm font-semibold text-[#3f4945] ml-1">Pickup Location</label>
-                      <div className="flex items-center gap-3 bg-white border border-[#bfc9c4] rounded-xl p-2 focus-within:border-[#006493] transition-all overflow-hidden">
-                        <span className="material-symbols-outlined text-[#006493] ml-2">location_on</span>
-                        <select id="pickup" name="pickup" required className="bg-transparent border-none p-2 focus:ring-0 text-sm w-full text-[#00342b] font-semibold appearance-none outline-none">
+                      <div className="flex items-center gap-3 bg-white border border-[#bfc9c4] rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-[#00affe] transition-all overflow-hidden">
+                        <span className="material-symbols-outlined text-[#006493]">location_on</span>
+                        <select id="pickup" name="pickup" required className="bg-transparent border-none p-0 focus:ring-0 text-base w-full text-[#00342b] font-semibold appearance-none outline-none">
                           <option value="">Select Pickup</option>
                           {locations.map(loc => (
                             <option key={loc.id} value={loc.id}>{loc.name}</option>
@@ -176,9 +181,9 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="destination" className="text-sm font-semibold text-[#3f4945] ml-1">Destination</label>
-                      <div className="flex items-center gap-3 bg-white border border-[#bfc9c4] rounded-xl p-2 focus-within:border-[#006493] transition-all overflow-hidden">
-                        <span className="material-symbols-outlined text-[#006493] ml-2">near_me</span>
-                        <select id="destination" name="destination" required className="bg-transparent border-none p-2 focus:ring-0 text-sm w-full text-[#00342b] font-semibold appearance-none outline-none">
+                      <div className="flex items-center gap-3 bg-white border border-[#bfc9c4] rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-[#00affe] transition-all overflow-hidden">
+                        <span className="material-symbols-outlined text-[#006493]">near_me</span>
+                        <select id="destination" name="destination" required className="bg-transparent border-none p-0 focus:ring-0 text-base w-full text-[#00342b] font-semibold appearance-none outline-none">
                           <option value="">Select Destination</option>
                           {locations.map(loc => (
                             <option key={loc.id} value={loc.id}>{loc.name}</option>
@@ -187,20 +192,20 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label htmlFor="travelDate" className="text-sm font-semibold text-[#3f4945] ml-1">Travel Date</label>
-                      <div className="flex items-center gap-3 bg-white border border-[#bfc9c4] rounded-xl p-2 focus-within:border-[#006493] transition-all overflow-hidden">
-                        <span className="material-symbols-outlined text-[#006493] ml-2">calendar_today</span>
-                        <input id="travelDate" type="date" name="travelDate" required min={new Date().toISOString().split('T')[0]} className="bg-transparent border-none p-2 focus:ring-0 text-sm w-full text-[#00342b] font-semibold outline-none" />
+                      <div className="flex items-center gap-3 bg-white border border-[#bfc9c4] rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-[#00affe] transition-all overflow-hidden">
+                        <span className="material-symbols-outlined text-[#006493]">calendar_today</span>
+                        <input id="travelDate" type="date" name="travelDate" required min={new Date().toISOString().split('T')[0]} className="bg-transparent border-none p-0 focus:ring-0 text-base w-full text-[#00342b] font-semibold outline-none" />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="seats" className="text-sm font-semibold text-[#3f4945] ml-1">Passengers</label>
-                      <div className="flex items-center gap-3 bg-white border border-[#bfc9c4] rounded-xl p-2 focus-within:border-[#006493] transition-all overflow-hidden">
-                        <span className="material-symbols-outlined text-[#006493] ml-2">group</span>
-                        <select id="seats" name="seats" required className="bg-transparent border-none p-2 focus:ring-0 text-sm w-full text-[#00342b] font-semibold appearance-none outline-none">
+                      <div className="flex items-center gap-3 bg-white border border-[#bfc9c4] rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-[#00affe] transition-all overflow-hidden">
+                        <span className="material-symbols-outlined text-[#006493]">group</span>
+                        <select id="seats" name="seats" required className="bg-transparent border-none p-0 focus:ring-0 text-base w-full text-[#00342b] font-semibold appearance-none outline-none">
                           <option value="">Select Seats</option>
                           {Array.from({ length: 20 }, (_, i) => (
                             <option key={i + 1} value={i + 1}>{i + 1} Passenger{i > 0 ? 's' : ''}</option>
@@ -209,11 +214,11 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                       </div>
                     </div>
                   </div>
-                  
+
                   <button
                     type="submit"
                     disabled={ticketLoading}
-                    className="w-full button-gradient text-white py-4 rounded-xl font-semibold text-base shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                    className="group w-full button-gradient text-white py-4 rounded-xl font-semibold text-base shadow-xl hover:shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
                   >
                     {ticketLoading ? (
                       <>
@@ -223,7 +228,7 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                     ) : (
                       <>
                         <span>Search Journeys</span>
-                        <span className="material-symbols-outlined">arrow_forward</span>
+                        <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
                       </>
                     )}
                   </button>
@@ -249,27 +254,48 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
           <div className="bg-white rounded-[16px] shadow-sm p-6 mb-10 grid grid-cols-1 md:grid-cols-2 gap-5 border border-black/5 luminous-shadow relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 col-span-1 md:col-span-2">
               <div className="space-y-2">
-                <label htmlFor="startDate" className="text-sm font-semibold text-[#3f4945] ml-1">Start Date</label>
+                <label htmlFor="travelDate" className="text-sm font-semibold text-[#3f4945] ml-1">Travel Date</label>
                 <input
-                  id="startDate"
+                  id="travelDate"
                   type="date"
-                  name="startDate"
+                  name="travelDate"
                   required
                   min={new Date().toISOString().split('T')[0]}
                   className="w-full border border-[#bfc9c4] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe] bg-[#f8fafb]"
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="endDate" className="text-sm font-semibold text-[#3f4945] ml-1">End Date</label>
-                <input
-                  id="endDate"
-                  type="date"
-                  name="endDate"
+                <label htmlFor="occasion" className="text-sm font-semibold text-[#3f4945] ml-1">Occasion</label>
+                <select
+                  id="occasion"
+                  name={selectedOccasion === 'Others' ? 'occasion_dropdown' : 'occasion'}
+                  value={selectedOccasion}
+                  onChange={(e) => setSelectedOccasion(e.target.value)}
                   required
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full border border-[#bfc9c4] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe] bg-[#f8fafb]"
-                />
+                  className="w-full border border-[#bfc9c4] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe] bg-[#f8fafb] appearance-none"
+                >
+                  <option value="" disabled>Select an occasion</option>
+                  <option value="Wedding">Wedding</option>
+                  <option value="Reception">Reception</option>
+                  <option value="Picnic">Picnic</option>
+                  <option value="Others">Others (Please specify)</option>
+                </select>
               </div>
+              
+              {selectedOccasion === 'Others' && (
+                <div className="space-y-2 col-span-1 md:col-span-2">
+                  <label htmlFor="customOccasion" className="text-sm font-semibold text-[#3f4945] ml-1">Specify Occasion</label>
+                  <input
+                    id="customOccasion"
+                    type="text"
+                    name="occasion"
+                    placeholder="E.g., Corporate Event, Pilgrimage..."
+                    maxLength={100}
+                    required
+                    className="w-full border border-[#bfc9c4] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe] bg-[#f8fafb]"
+                  />
+                </div>
+              )}
             </div>
 
             {busResult?.error && busResult.error === 'AUTH_REQUIRED' ? (
@@ -332,12 +358,12 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                 <div key={bus.id} className={`bg-white rounded-[16px] overflow-hidden border ${selected ? 'border-[#00affe] ring-2 ring-[#00affe]' : 'border-[#bfc9c4]/50'} luminous-shadow group hover:-translate-y-2 transition-all duration-300 relative`}>
                   <div className="relative h-56 overflow-hidden bg-gray-50 flex items-center justify-center">
                     {bus.image_url ? (
-                      <Image 
-                        src={bus.image_url} 
-                        alt={bus.name} 
-                        width={600} 
-                        height={400} 
-                        className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500" 
+                      <Image
+                        src={bus.image_url}
+                        alt={bus.name}
+                        width={600}
+                        height={400}
+                        className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
                       <span className="material-symbols-outlined text-6xl text-gray-300">directions_bus</span>
@@ -346,7 +372,7 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                       Premium
                     </div>
                   </div>
-                  
+
                   <div className="p-6 space-y-4">
                     <div className="flex justify-between items-start">
                       <div>
@@ -358,7 +384,7 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                         <span className="text-[#3f4945] text-[9px] font-bold tracking-wider">SEATS</span>
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-2 text-xs">
                       {bus.features?.split(',').map((feat, i) => (
                         <span key={i} className="font-semibold text-[#3f4945] bg-[#e1e3e4]/50 px-2 py-1 rounded-md">
@@ -366,15 +392,14 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                         </span>
                       ))}
                     </div>
-                    
+
                     <button
                       type="button"
                       onClick={() => toggleBusSelection(bus.id)}
-                      className={`w-full py-3 rounded-xl font-semibold transition-all ${
-                        selected 
-                        ? 'bg-[#00affe] text-white shadow-md' 
+                      className={`w-full py-3 rounded-xl font-semibold transition-all ${selected
+                        ? 'bg-[#00affe] text-white shadow-md'
                         : 'border-2 border-[#004d40]/10 text-[#00342b] hover:bg-[#004d40] hover:text-white'
-                      }`}
+                        }`}
                     >
                       {selected ? 'Selected ✓' : 'Select Bus'}
                     </button>
@@ -390,18 +415,18 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
       <section className="py-20 bg-[#eceeef]">
         <div className="container mx-auto px-5 lg:px-10 max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="md:col-span-2 glass p-8 rounded-3xl border border-white/40 flex flex-col justify-between min-h-[200px]">
+            <div className="md:col-span-2 glass p-8 rounded-3xl border border-white/40 flex flex-col justify-between min-h-[200px] hover:-translate-y-1 hover:shadow-xl transition-all duration-300 cursor-default">
               <span className="material-symbols-outlined text-4xl text-[#006493]">security</span>
               <div className="mt-6">
                 <h4 className="text-xl font-bold text-[#00342b]">Uncompromised Safety</h4>
                 <p className="text-[#3f4945] text-sm mt-2">24/7 support and verified drivers to ensure your journey is always safe.</p>
               </div>
             </div>
-            <div className="md:col-span-1 bg-white p-8 rounded-3xl flex flex-col items-center justify-center text-center border border-black/5 luminous-shadow">
+            <div className="md:col-span-1 bg-white p-8 rounded-3xl flex flex-col items-center justify-center text-center border border-black/5 luminous-shadow hover:-translate-y-1 hover:shadow-xl transition-all duration-300 cursor-default">
               <span className="text-4xl lg:text-5xl font-bold text-gradient">98%</span>
               <p className="text-[#3f4945] text-sm font-bold mt-2">On-Time Arrival</p>
             </div>
-            <div className="md:col-span-1 bg-white p-8 rounded-3xl flex flex-col items-center justify-center text-center border border-black/5 luminous-shadow">
+            <div className="md:col-span-1 bg-white p-8 rounded-3xl flex flex-col items-center justify-center text-center border border-black/5 luminous-shadow hover:-translate-y-1 hover:shadow-xl transition-all duration-300 cursor-default">
               <span className="text-4xl lg:text-5xl font-bold text-gradient">15k+</span>
               <p className="text-[#3f4945] text-sm font-bold mt-2">Monthly Travelers</p>
             </div>
@@ -413,12 +438,12 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
               </div>
               <div className="z-10 flex flex-col sm:flex-row gap-4 w-full md:w-auto mt-4 md:mt-0">
                 <div className="bg-[#00342b]/50 text-white/60 border border-white/20 px-5 py-3 rounded-xl flex items-center justify-center sm:justify-start gap-3 cursor-not-allowed transition w-full sm:w-auto">
-                  <span className="material-symbols-outlined text-3xl opacity-70 shrink-0">play_store_installed</span>
-                  <div className="text-xs leading-tight text-left">COMING TO <br/><span className="text-base font-bold whitespace-nowrap">Google Play</span></div>
+                  <svg className="w-8 h-8 opacity-70 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.302 2.302-2.302 2.302-2.624-2.302 2.624-2.302zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z" /></svg>
+                  <div className="text-xs leading-tight text-left">COMING TO <br /><span className="text-base font-bold whitespace-nowrap">Google Play</span></div>
                 </div>
                 <div className="bg-[#00342b]/50 text-white/60 border border-white/20 px-5 py-3 rounded-xl flex items-center justify-center sm:justify-start gap-3 cursor-not-allowed transition w-full sm:w-auto">
                   <span className="material-symbols-outlined text-3xl opacity-70 shrink-0">phone_iphone</span>
-                  <div className="text-xs leading-tight text-left">COMING TO <br/><span className="text-base font-bold whitespace-nowrap">App Store</span></div>
+                  <div className="text-xs leading-tight text-left">COMING TO <br /><span className="text-base font-bold whitespace-nowrap">App Store</span></div>
                 </div>
               </div>
               <span className="material-symbols-outlined absolute -right-10 -bottom-20 text-[250px] text-white/10 hidden lg:block pointer-events-none">smartphone</span>
@@ -432,21 +457,30 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
         <div className="container mx-auto px-5 lg:px-10 max-w-4xl">
           <h2 className="text-3xl font-bold text-[#00342b] mb-10 text-center">Frequently Asked Questions</h2>
           <div className="space-y-8">
-            <div>
-              <h3 className="text-xl font-bold text-[#006493] mb-2">What is Pather Saathi?</h3>
-              <p className="text-[#3f4945] leading-relaxed">
+            <div className="p-6 md:p-8 bg-[#f8fafb] rounded-3xl border border-[#e1e3e4] hover:shadow-md transition-shadow">
+              <h3 className="text-lg md:text-xl font-bold text-[#00342b] mb-3 flex items-start gap-3">
+                <span className="material-symbols-outlined text-[#00affe] mt-0.5 shrink-0">help</span>
+                What is Pather Saathi?
+              </h3>
+              <p className="text-[#3f4945] leading-relaxed ml-0 md:ml-9">
                 Pather Saathi is the premier ultra-local fleet booking platform connecting the regions of Sribhumi, Silchar, and Hailakandi in Barak Valley, Assam. We provide secure online seat booking and whole vehicle chartering with verified operators to ensure safe and reliable journeys.
               </p>
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-[#006493] mb-2">How do I book a bus in Barak Valley?</h3>
-              <p className="text-[#3f4945] leading-relaxed">
+            <div className="p-6 md:p-8 bg-[#f8fafb] rounded-3xl border border-[#e1e3e4] hover:shadow-md transition-shadow">
+              <h3 className="text-lg md:text-xl font-bold text-[#00342b] mb-3 flex items-start gap-3">
+                <span className="material-symbols-outlined text-[#00affe] mt-0.5 shrink-0">help</span>
+                How do I book a bus in Barak Valley?
+              </h3>
+              <p className="text-[#3f4945] leading-relaxed ml-0 md:ml-9">
                 To book a bus in Barak Valley through Pather Saathi, simply create a free account, select your pickup and destination locations, choose your travel date, and confirm your seat. Your booking will be instantly sent to the operator for final confirmation.
               </p>
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-[#006493] mb-2">Can I charter a whole vehicle in Silchar or Sribhumi?</h3>
-              <p className="text-[#3f4945] leading-relaxed">
+            <div className="p-6 md:p-8 bg-[#f8fafb] rounded-3xl border border-[#e1e3e4] hover:shadow-md transition-shadow">
+              <h3 className="text-lg md:text-xl font-bold text-[#00342b] mb-3 flex items-start gap-3">
+                <span className="material-symbols-outlined text-[#00affe] mt-0.5 shrink-0">help</span>
+                Can I charter a whole vehicle in Silchar or Sribhumi?
+              </h3>
+              <p className="text-[#3f4945] leading-relaxed ml-0 md:ml-9">
                 Yes, Pather Saathi allows you to easily request whole vehicle charters in Silchar, Sribhumi, and Hailakandi. Navigate to the Charter section on our homepage, select your travel dates, and submit a request to our verified local fleet operators.
               </p>
             </div>
@@ -454,19 +488,19 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
         </div>
       </section>
 
-      <footer className="bg-[#f8fafb] text-[#191c1d] px-5 lg:px-10 py-12 md:py-16 border-t border-[#d8dadb]">
+      <footer className="bg-[#f8fafb] text-[#191c1d] px-5 lg:px-10 py-8 md:py-10 border-t border-[#d8dadb]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-10">
           <div className="flex flex-col items-center md:items-start">
             <h2 className="text-2xl font-bold mb-4 text-[#00342b]">Contact Us</h2>
             <div className="space-y-3 text-[#3f4945] text-sm font-medium">
               <p className="flex items-center justify-center md:justify-start gap-2"><span className="material-symbols-outlined text-[#006493]">mail</span> support@pathersaathi.in</p>
               <p className="flex items-center justify-center md:justify-start gap-2"><span className="material-symbols-outlined text-[#006493]">call</span> +91 6002089037</p>
-              <p className="flex items-center justify-center md:justify-start gap-2"><span className="material-symbols-outlined text-[#006493]">location_on</span> Silchar, Barak Valley, Assam</p>
+              <p className="flex items-center justify-center md:justify-start gap-2"><span className="material-symbols-outlined text-[#006493]">location_on</span> Sribhumi, Barak Valley, Assam</p>
             </div>
           </div>
           <div className="flex flex-col items-center justify-center">
-            <div className="bg-white p-2 shadow-sm mb-4 border border-[#e1e3e4] rounded-2xl">
-              <Image src="/images/logo.jpeg" alt="Pather Saathi" width={240} height={160} className="object-contain w-[240px] h-auto rounded-xl" />
+            <div className="bg-white p-2 shadow-sm border border-[#e1e3e4] rounded-2xl">
+              <Image src="/images/logo.jpeg" alt="Pather Saathi" width={180} height={120} className="object-contain w-[180px] h-auto rounded-xl" />
             </div>
           </div>
         </div>

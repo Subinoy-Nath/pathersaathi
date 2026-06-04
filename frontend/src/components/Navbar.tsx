@@ -26,21 +26,21 @@ export default function Navbar({ user, role }: NavbarProps) {
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-[0_8px_32px_0_rgba(0,77,64,0.08)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-12">
+        <div className="flex justify-between h-20">
           <div className="flex items-center">
             <Link href="/" onClick={handleHomeClick} className="flex-shrink-0 flex items-center gap-3 group">
-              <Image 
-                src="/images/logo.jpeg" 
-                alt="Pather Saathi Logo" 
+              <Image
+                src="/images/navlogo.png"
+                alt="Pather Saathi Logo"
                 width={52}
                 height={52}
                 className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover shadow-md border border-[#e1e3e4] group-hover:scale-105 transition-transform duration-300"
                 unoptimized
               />
-              <span className="font-extrabold text-2xl tracking-tight text-gradient hidden sm:block group-hover:opacity-90 transition-opacity">Pather Saathi</span>
+              <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-gradient group-hover:opacity-90 transition-opacity">Pather Saathi</span>
             </Link>
-            
+
             {/* Desktop Navigation */}
             <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
               <Link href="/" onClick={handleHomeClick} className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-blue-500 text-sm font-medium text-gray-500 hover:text-gray-900 transition">
@@ -66,10 +66,10 @@ export default function Navbar({ user, role }: NavbarProps) {
 
           <div className="hidden sm:flex sm:items-center sm:space-x-4">
             {user ? (
-              <div className="flex items-center space-x-4">
-                <Link href="/profile" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition">
-                  {role === 'operator' ? <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-2">Operator</span> : null}
-                  {user.email}
+              <div className="flex items-center space-x-3">
+                {role === 'operator' && <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-semibold">Operator</span>}
+                <Link href="/profile" className="w-9 h-9 rounded-full bg-[#004d40] text-white flex items-center justify-center hover:bg-[#00342b] transition-colors" title={user.email || 'Profile'}>
+                  <span className="material-symbols-outlined text-[20px]">person</span>
                 </Link>
                 <button
                   onClick={() => logout()}

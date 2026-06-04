@@ -10,7 +10,7 @@
 ---
 
 ## Current Deployment Status
-* **Database**: Supabase Cloud project. 20 migrations applied (core schema through RLS recursion fix). Auth trigger `handle_new_user` active with field whitelisting.
+* **Database**: Supabase Cloud project. 22 migrations applied (core schema through search path hardening). Auth trigger `handle_new_user` active with field whitelisting.
 * **Frontend**: Next.js 16.2.6 (Turbopack). Build passes with zero type errors. All routes compile successfully.
 * **Auth Status**: Working. Sign up handles user/metadata copying via idempotent PostgreSQL trigger with whitelisted fields (`name`, `phone_number`).
 * **Booking Status**: End-to-end operational for both tickets and whole-vehicle bookings.
@@ -65,7 +65,7 @@
 
 ### `bookings`
 * **Purpose**: Tracks customer ticket or bus reservations.
-* **Columns**: `id` (UUID, PK), `customer_id` (UUID, FK), `schedule_id` (UUID, FK, nullable), `booking_type` (ticket/whole_vehicle), `travel_date` (Date), `start_date` (Date), `end_date` (Date), `seats_requested` (Integer), `status` (pending/approved/rejected/cancelled), `booking_reference` (String), `operator_notes`.
+* **Columns**: `id` (UUID, PK), `customer_id` (UUID, FK), `schedule_id` (UUID, FK, nullable), `booking_type` (ticket/whole_vehicle), `travel_date` (Date), `start_date` (Date, legacy), `end_date` (Date, legacy), `occasion` (Text, nullable), `seats_requested` (Integer), `status` (pending/approved/rejected/cancelled), `booking_reference` (String), `operator_notes`.
 * **RLS Policies**: Customers can view/create their own. Operators can view/update bookings tied to their vehicles.
 * **Trigger**: `trg_booking_status_change` fires on INSERT/UPDATE of `status` → auto-inserts into `booking_events`.
 
@@ -90,6 +90,7 @@
 | `log_booking_status_change()` | SECURITY DEFINER | Trigger function: auto-inserts `booking_events` on status change. |
 | `cancel_booking_atomic(booking_id, cust_id)` | SECURITY INVOKER | Atomically updates status to cancelled and restores seats for the customer. |
 | `update_booking_status_atomic(...)` | SECURITY INVOKER | Atomically updates status (approve/reject/cancel) and restores seats for the operator. |
+| `book_whole_vehicle_atomic(ids, date, occasion, cust_id, ref)` | SECURITY DEFINER | Inserts whole vehicle booking (bypassing RLS) with single travel date and occasion context. |
 | `user_owns_booking(booking_uuid)` | SECURITY DEFINER | Helper to check booking ownership without RLS recursion. Used in `booking_vehicles` policies. |
 
 ---

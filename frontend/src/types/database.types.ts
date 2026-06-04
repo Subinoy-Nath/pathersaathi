@@ -65,6 +65,7 @@ export type Database = {
           deleted_at: string | null
           end_date: string | null
           id: string
+          occasion: string | null
           operator_notes: string | null
           schedule_id: string | null
           seats_requested: number | null
@@ -82,6 +83,7 @@ export type Database = {
           deleted_at?: string | null
           end_date?: string | null
           id?: string
+          occasion?: string | null
           operator_notes?: string | null
           schedule_id?: string | null
           seats_requested?: number | null
@@ -99,6 +101,7 @@ export type Database = {
           deleted_at?: string | null
           end_date?: string | null
           id?: string
+          occasion?: string | null
           operator_notes?: string | null
           schedule_id?: string | null
           seats_requested?: number | null
@@ -426,6 +429,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      book_whole_vehicle_atomic: {
+        Args: {
+          p_vehicle_ids: string[]
+          p_travel_date: string
+          p_occasion: string
+          p_customer_id: string
+          p_booking_reference: string
+        }
+        Returns: string
+      }
       book_seats: {
         Args: {
           p_schedule_id: string

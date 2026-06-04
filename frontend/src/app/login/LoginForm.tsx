@@ -32,7 +32,7 @@ export default function LoginForm({ message, initialMode }: { message?: string; 
   }, [initialMode]);
 
   return (
-    <div className="auth-bg min-h-screen flex flex-col items-center justify-center p-4 relative w-full text-[#191c1d]">
+    <div className="auth-bg min-h-screen flex flex-col items-center justify-start p-4 pt-20 md:pt-24 pb-12 relative w-full text-[#191c1d]">
       <Link
         href="/"
         className="absolute left-4 sm:left-8 top-8 py-2 px-4 rounded-md no-underline text-white hover:bg-white/10 flex items-center group text-sm z-20 transition-all font-semibold"

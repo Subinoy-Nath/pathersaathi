@@ -34,7 +34,7 @@ export async function signup(formData: FormData) {
   let phone_number = phone_raw.trim().replace(/\s+/g, '')
   
   if (!phone_number) {
-    redirect('/login?message=Phone number is required')
+    redirect('/login?mode=signup&message=Phone number is required')
   }
 
   // Ensure it starts with +91 if not provided (assuming India for this MVP)
@@ -49,11 +49,11 @@ export async function signup(formData: FormData) {
   // Very basic regex validation for E.164-ish format
   const phoneRegex = /^\+[1-9]\d{1,14}$/
   if (!phoneRegex.test(phone_number)) {
-    redirect('/login?message=Invalid phone number format. Use +91XXXXXXXXXX')
+    redirect('/login?mode=signup&message=Invalid phone number format. Use +91XXXXXXXXXX')
   }
 
   if (!name || name.trim().length < 2) {
-    redirect('/login?message=Name is required and must be at least 2 characters')
+    redirect('/login?mode=signup&message=Name is required and must be at least 2 characters')
   }
 
   const data = {
@@ -70,7 +70,7 @@ export async function signup(formData: FormData) {
   const { data: authData, error } = await supabase.auth.signUp(data)
 
   if (error) {
-    redirect(`/login?message=${encodeURIComponent(error.message || 'Could not register user')}`)
+    redirect(`/login?mode=signup&message=${encodeURIComponent(error.message || 'Could not register user')}`)
   }
 
   // If session is null after signup, email verification is required

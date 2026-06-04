@@ -10,7 +10,7 @@
 ---
 
 ## Current Deployment Status
-* **Database**: Supabase Cloud project. 22 migrations applied (core schema through search path hardening). Auth trigger `handle_new_user` active with field whitelisting.
+* **Database**: Supabase Cloud project. 24 migrations applied (core schema through admin user seed). Auth trigger `handle_new_user` active with field whitelisting.
 * **Frontend**: Next.js 16.2.6 (Turbopack). Build passes with zero type errors. All routes compile successfully.
 * **Auth Status**: Working. Sign up handles user/metadata copying via idempotent PostgreSQL trigger with whitelisted fields (`name`, `phone_number`).
 * **Booking Status**: End-to-end operational for both tickets and whole-vehicle bookings.

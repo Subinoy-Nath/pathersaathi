@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import NavbarServer from "@/components/NavbarServer";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const geistSans = { variable: "--font-geist-sans" };
@@ -88,6 +89,7 @@ export default function RootLayout({
         <div className="flex-1">
           {children}
         </div>
+        <Analytics />
       </body>
     </html>
   );

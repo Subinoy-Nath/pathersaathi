@@ -127,29 +127,19 @@
 
 % --- TITLE PAGE ---
 \begin{titlepage}
-    \begin{tikzpicture}[remember picture, overlay]
-        % Background geometric shapes for a modern startup whitepaper feel
-        \fill[brandteal] (current page.north west) rectangle ($(current page.north east)+(0,-3)$);
-        \fill[lightgray] (current page.south west) rectangle ($(current page.south east)+(0,3)$);
-    \end{tikzpicture}
-
-    \vspace*{-2cm}
     \begin{center}
-        \textcolor{white}{\LARGE \textbf{BARAK VALLEY ENGINEERING COLLEGE}}\\[0.2cm]
-        \textcolor{white}{\large Department of Computer Science and Engineering}\\[0.2cm]
-        \textcolor{white}{\large Assam Science and Technology University (ASTU)}
-    \end{center}
-
-    \vspace{3cm}
-
-    \begin{center}
-        \includegraphics[width=5cm]{logo.png}\\[1.5cm] % Keep logo size
-        {\Huge \textbf{\textcolor{brandteal}{PATHER SAATHI}}}\\[0.5cm]
-        {\LARGE \textbf{\textcolor{darkgray}{A Fleet Booking Platform for Barak Valley}}}\\[0.8cm]
+        \vspace*{1cm}
         
-        \begin{tcolorbox}[enhanced, colback=white, colframe=brandteal, arc=0mm, boxrule=1pt, width=0.8\textwidth, center]
-            \centering \textit{\Large AI-Augmented Development $\times$ Local Impact}
-        \end{tcolorbox}
+        {\LARGE \textbf{BARAK VALLEY ENGINEERING COLLEGE}}\\[0.3cm]
+        {\large Department of Computer Science and Engineering}\\[0.3cm]
+        {\large Assam Science and Technology University (ASTU)}
+
+        \vspace{3cm}
+
+        \includegraphics[width=5cm]{logo.png}\\[2cm] % Keep logo size
+        
+        {\Huge \textbf{PATHER SAATHI}}\\[0.5cm]
+        {\Large \textbf{A Fleet Booking Platform for Barak Valley}}\\[1.5cm]
     \end{center}
 
     \vfill
@@ -288,10 +278,13 @@ Methodologically, this project validates a multi-model AI-augmented development 
 \renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
 
 \tableofcontents
-\newpage
+\vspace{2cm}
+\begingroup
+\let\clearpage\relax
 \listoffigures
-\newpage
+\vspace{2cm}
 \listoftables
+\endgroup
 \newpage
 \pagenumbering{arabic}
 
@@ -620,14 +613,14 @@ The security architecture operates on a defense-in-depth model. The primary defe
 The user interface was designed strictly for mobile-first constraints, adopting a minimalist, high-contrast aesthetic. To reduce cognitive friction, the interface leverages the \textit{Shadcn UI} component library, offering familiar, accessible touch targets suitable for users in Barak Valley.
 
 \screenshot{
-    \includegraphics[width=\textwidth,draft]{homepage.png}
+    \includegraphics[width=\textwidth]{homepage.png}
 }{Pather Saathi Landing Page \& Route Search}{homepage}
 
 \section{Operator Dashboard}
 The Operator Dashboard acts as a command centre. The interface is data-dense but logically separated, allowing operators to instantly approve or reject pending requests, monitor revenue, and manage their fleet.
 
 \screenshot{
-    \includegraphics[width=\textwidth,draft]{operator-dashboard.png}
+    \includegraphics[width=\textwidth]{operator-dashboard.png}
 }{Operator Real-Time Dashboard}{dashboard}
 
 % --- CHAPTER 9 ---

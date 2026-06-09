@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { upsertVehicle, upsertRoute, upsertSchedule } from './actions'
 import Image from 'next/image'
 
@@ -23,6 +24,7 @@ export default function FleetClient({
   schedules,
   isVerified,
 }: FleetClientProps) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<'vehicles' | 'routes' | 'schedules'>('vehicles')
   const [showVehicleForm, setShowVehicleForm] = useState(false)
   const [showRouteForm, setShowRouteForm] = useState(false)
@@ -41,7 +43,10 @@ export default function FleetClient({
     try {
       const res = await upsertVehicle(formData)
       setResult(res)
-      if (res.success) setShowVehicleForm(false)
+      if (res.success) {
+        setShowVehicleForm(false)
+        router.refresh()
+      }
     } catch {
       setResult({ error: 'An unexpected error occurred.' })
     }
@@ -54,7 +59,10 @@ export default function FleetClient({
     try {
       const res = await upsertRoute(formData)
       setResult(res)
-      if (res.success) setShowRouteForm(false)
+      if (res.success) {
+        setShowRouteForm(false)
+        router.refresh()
+      }
     } catch {
       setResult({ error: 'An unexpected error occurred.' })
     }
@@ -67,7 +75,10 @@ export default function FleetClient({
     try {
       const res = await upsertSchedule(formData)
       setResult(res)
-      if (res.success) setShowScheduleForm(false)
+      if (res.success) {
+        setShowScheduleForm(false)
+        router.refresh()
+      }
     } catch {
       setResult({ error: 'An unexpected error occurred.' })
     }

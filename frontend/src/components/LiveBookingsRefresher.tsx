@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import { toast } from 'sonner'
 
 export default function LiveBookingsRefresher() {
   const router = useRouter()
@@ -22,8 +23,15 @@ export default function LiveBookingsRefresher() {
         },
         (payload) => {
           console.log('Live booking update received:', payload)
+          if (payload.eventType === 'INSERT') {
+            toast.success('New Booking Received', {
+              description: 'Dashboard updated with new live booking.',
+            })
+          }
           // Refresh the current route to fetch new data
-          router.refresh()
+          startTransition(() => {
+            router.refresh()
+          })
         }
       )
       .subscribe()

@@ -92,7 +92,22 @@ export default function RootLayout({
           {children}
         </div>
         <Analytics />
-        <Toaster position="bottom-right" richColors theme="light" />
+        <Toaster 
+          position="bottom-right" 
+          richColors 
+          theme="light" 
+          toastOptions={{
+            classNames: {
+              toast: 'glass-card luminous-shadow border border-white/50 rounded-2xl p-4 font-sans backdrop-blur-xl bg-white/80',
+              title: 'font-bold text-[#00342b] text-sm',
+              description: 'text-[#3f4945] text-xs font-medium',
+              success: 'border-l-4 border-l-green-500',
+              error: 'border-l-4 border-l-red-500',
+              warning: 'border-l-4 border-l-yellow-500',
+              info: 'border-l-4 border-l-[#00affe]',
+            }
+          }}
+        />
       </body>
     </html>
   );

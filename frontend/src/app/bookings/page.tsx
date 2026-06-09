@@ -57,11 +57,15 @@ export default async function BookingsPage() {
         <h1 className="text-3xl font-extrabold text-gray-900 mb-8">My Bookings</h1>
 
         {(!bookings || bookings.length === 0) ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
-            <p className="text-gray-500 mb-6">You haven&apos;t made any bus reservations yet.</p>
-            <Link href="/" className="inline-flex bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition">
-              Find a Bus
+          <div className="glass-card rounded-3xl border border-white/60 p-16 text-center flex flex-col items-center justify-center luminous-shadow relative overflow-hidden mt-8">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#004d40] to-[#00affe]"></div>
+            <div className="w-24 h-24 bg-gradient-to-br from-[#e2f1ec] to-white rounded-full flex items-center justify-center mb-6 shadow-[0_8px_16px_rgba(0,175,254,0.1)] border border-white/80 hover:-translate-y-2 transition-transform duration-500 cursor-default">
+              <span className="material-symbols-outlined text-[48px] text-[#00affe]">confirmation_number</span>
+            </div>
+            <h3 className="text-2xl font-bold text-[#00342b] mb-3">No Bookings Yet</h3>
+            <p className="text-[#3f4945] mb-8 max-w-sm text-base leading-relaxed">Your upcoming and past bus reservations will appear here. Ready to plan your next journey?</p>
+            <Link href="/" className="button-gradient text-white px-8 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px]">search</span> Find a Bus
             </Link>
           </div>
         ) : (
@@ -102,7 +106,7 @@ export default async function BookingsPage() {
               }
 
               return (
-                <div key={booking.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div key={booking.id} className="glass-card rounded-2xl border border-white/50 overflow-hidden luminous-shadow hover:shadow-[0_20px_40px_-10px_rgba(0,77,64,0.12)] transition-shadow duration-300">
                   <div className="p-6">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                       <div>
@@ -125,7 +129,7 @@ export default async function BookingsPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 border-t border-b border-gray-100 my-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 border-t border-b border-[#bfc9c4]/30 my-4">
                       {isWholeVehicle ? (
                         <>
                           <div className="md:col-span-2">
@@ -171,9 +175,9 @@ export default async function BookingsPage() {
                     </div>
 
                     {booking.operator_notes && (
-                      <div className="mb-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-1">Note from Operator</h4>
-                        <p className="text-sm text-gray-700">{booking.operator_notes}</p>
+                      <div className="mb-4 bg-[#004d40]/5 rounded-xl p-4 border border-[#004d40]/10 shadow-sm">
+                        <h4 className="text-sm font-bold text-[#00342b] mb-1">Note from Operator</h4>
+                        <p className="text-sm text-[#3f4945]">{booking.operator_notes}</p>
                       </div>
                     )}
 

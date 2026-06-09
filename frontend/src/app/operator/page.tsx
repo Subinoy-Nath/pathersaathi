@@ -272,13 +272,14 @@ export default async function OperatorDashboard() {
                   <AnimatedTableBody className="divide-y divide-[#bfc9c4]/20">
                     {bookings.length === 0 ? (
                       <tr className="block md:table-row">
-                        <td colSpan={6} className="py-16 text-center block md:table-cell">
-                          <div className="flex flex-col items-center justify-center gap-3">
-                            <div className="w-16 h-16 rounded-full bg-white/50 flex items-center justify-center mb-2 shadow-inner border border-white/60">
-                              <span className="material-symbols-outlined text-4xl text-[#bfc9c4]">inbox</span>
+                        <td colSpan={6} className="py-20 text-center block md:table-cell relative overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-b from-[#f8fafb]/0 via-[#e2f1ec]/20 to-[#f8fafb]/0"></div>
+                          <div className="flex flex-col items-center justify-center gap-4 relative z-10">
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#e2f1ec] to-white flex items-center justify-center mb-2 shadow-[0_8px_16px_rgba(0,175,254,0.1)] border border-white/80 hover:-translate-y-2 transition-transform duration-500 cursor-default">
+                              <span className="material-symbols-outlined text-[40px] text-[#00affe]">receipt_long</span>
                             </div>
-                            <h3 className="text-lg font-bold text-[#00342b]">No Bookings Yet</h3>
-                            <p className="text-sm text-[#3f4945] max-w-xs mx-auto">When customers book your vehicles, they will appear here automatically.</p>
+                            <h3 className="text-xl font-bold text-[#00342b]">No Bookings Yet</h3>
+                            <p className="text-sm text-[#3f4945] max-w-md mx-auto leading-relaxed">Your incoming passenger tickets and whole vehicle charters will automatically populate here once customers start booking.</p>
                           </div>
                         </td>
                       </tr>

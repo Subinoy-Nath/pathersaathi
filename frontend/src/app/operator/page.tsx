@@ -258,8 +258,8 @@ export default async function OperatorDashboard() {
 
             <div className="glass-card rounded-2xl border border-white/40 overflow-hidden shadow-xl shadow-[#00342b]/5">
               <div className="overflow-x-auto glass-scroll">
-                <table className="w-full text-left border-collapse">
-                  <thead>
+                <table className="w-full text-left border-collapse block md:table">
+                  <thead className="hidden md:table-header-group">
                     <tr className="bg-[#e6e8e9] border-b border-[#bfc9c4]/50">
                       <th className="px-6 py-4 text-sm text-[#00342b] font-bold uppercase tracking-wider">Reference</th>
                       <th className="px-6 py-4 text-sm text-[#00342b] font-bold uppercase tracking-wider">Customer</th>
@@ -271,8 +271,8 @@ export default async function OperatorDashboard() {
                   </thead>
                   <AnimatedTableBody className="divide-y divide-[#bfc9c4]/20">
                     {bookings.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-16 text-center">
+                      <tr className="block md:table-row">
+                        <td colSpan={6} className="py-16 text-center block md:table-cell">
                           <div className="flex flex-col items-center justify-center gap-3">
                             <div className="w-16 h-16 rounded-full bg-white/50 flex items-center justify-center mb-2 shadow-inner border border-white/60">
                               <span className="material-symbols-outlined text-4xl text-[#bfc9c4]">inbox</span>
@@ -308,14 +308,16 @@ export default async function OperatorDashboard() {
                         const initials = cust?.name ? cust.name.substring(0, 2).toUpperCase() : 'GU'
 
                         return (
-                          <tr key={b.id} className="hover:bg-[#00342b]/5 transition-colors group">
-                            <td className="px-6 py-4">
-                              <div className="font-mono text-[#00affe] font-bold">{b.booking_reference}</div>
+                          <tr key={b.id} className="hover:bg-[#00342b]/5 transition-colors group block md:table-row bg-white/40 md:bg-transparent rounded-2xl md:rounded-none border border-white/60 md:border-none p-4 mb-4 md:mb-0 shadow-sm md:shadow-none">
+                            <td className="px-0 md:px-6 py-2 md:py-4 block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
+                              <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Reference</div>
+                              <div className="font-mono text-[#00affe] font-bold text-lg md:text-base">{b.booking_reference}</div>
                               {isWholeVehicle && (
                                 <span className="inline-block mt-1 bg-purple-100 text-purple-800 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded">Whole Bus</span>
                               )}
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-0 md:px-6 py-3 md:py-4 block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
+                              <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-2">Customer</div>
                               <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-[#afefdd] flex items-center justify-center text-[#00201a] font-bold text-[12px]">{initials}</div>
                                 <div className="flex flex-col">
@@ -324,7 +326,8 @@ export default async function OperatorDashboard() {
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-0 md:px-6 py-3 md:py-4 block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
+                              <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-2">Trip Details</div>
                               <div className="flex flex-col">
                                 {isWholeVehicle ? (
                                   <>
@@ -340,7 +343,8 @@ export default async function OperatorDashboard() {
                                 )}
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm text-[#191c1d]">
+                            <td className="px-0 md:px-6 py-3 md:py-4 text-sm text-[#191c1d] block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
+                              <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Date</div>
                               {isWholeVehicle ? (
                                 startDateObj && endDateObj ? (
                                   <>
@@ -354,11 +358,12 @@ export default async function OperatorDashboard() {
                                 <div className="font-medium">{b.travel_date}</div>
                               )}
                             </td>
-                            <td className="px-6 py-4 text-sm text-[#191c1d] text-center font-bold">
+                            <td className="px-0 md:px-6 py-3 md:py-4 text-sm text-[#191c1d] text-left md:text-center font-bold block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
+                              <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Seats</div>
                               {isWholeVehicle ? 'Whole Bus' : b.seats_requested}
                             </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center justify-between gap-4">
+                            <td className="px-0 md:px-6 pt-4 pb-2 md:py-4 block md:table-cell">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${b.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                   b.status === 'approved' ? 'bg-green-100 text-green-700' :
                                     b.status === 'rejected' ? 'bg-red-100 text-red-700' :

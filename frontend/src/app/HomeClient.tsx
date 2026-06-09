@@ -193,7 +193,7 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                      ticketResult.error.includes('schedules') ? "There are no buses scheduled for this route on your selected date." : 
                      ticketResult.error}
                     <br />
-                    <span className="text-sm mt-3 inline-block text-gray-500 font-medium">Don't worry, adjusting your date or route usually helps!</span>
+                    <span className="text-sm mt-3 inline-block text-gray-500 font-medium">Don&apos;t worry, adjusting your date or route usually helps!</span>
                   </p>
                   
                   <div className="flex flex-col sm:flex-row w-full gap-3 sm:px-4">

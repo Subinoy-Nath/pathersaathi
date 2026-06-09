@@ -21,7 +21,7 @@ export default async function OperatorDashboard() {
     .select('*')
     .eq('id', user.id)
     .single()
-  
+
   if (profileError || profile?.role !== 'operator') {
     return (
       <div className="p-8 text-center min-h-screen bg-[#f8fafb] flex flex-col justify-center items-center">
@@ -46,7 +46,7 @@ export default async function OperatorDashboard() {
   // To get bookings for this operator, we need bookings that either:
   // 1. Point to a schedule for one of their vehicles
   // 2. Or point directly to their vehicles via booking_vehicles (whole vehicle)
-  
+
   // We first need to get schedules for these vehicles
   const { data: schedules } = await supabase
     .from('schedules')
@@ -62,11 +62,11 @@ export default async function OperatorDashboard() {
     .select('booking_id')
     .in('vehicle_id', vehicleIds)
     .is('deleted_at', null)
-    
+
   const bvBookingIds = bookingVehicles?.map(bv => bv.booking_id) || []
 
   let bookings: Record<string, any>[] = []
-  
+
   if (scheduleIds.length > 0 || bvBookingIds.length > 0) {
     let query = supabase
       .from('bookings')
@@ -98,15 +98,15 @@ export default async function OperatorDashboard() {
 
     // Construct the OR filter for schedule_id OR id in bvBookingIds
     if (scheduleIds.length > 0 && bvBookingIds.length > 0) {
-       query = query.or(`schedule_id.in.(${scheduleIds.join(',')}),id.in.(${bvBookingIds.join(',')})`)
+      query = query.or(`schedule_id.in.(${scheduleIds.join(',')}),id.in.(${bvBookingIds.join(',')})`)
     } else if (scheduleIds.length > 0) {
-       query = query.in('schedule_id', scheduleIds)
+      query = query.in('schedule_id', scheduleIds)
     } else if (bvBookingIds.length > 0) {
-       query = query.in('id', bvBookingIds)
+      query = query.in('id', bvBookingIds)
     }
 
     const { data: bookingsData, error } = await query
-      
+
     if (bookingsData && !error) {
       bookings = bookingsData
     } else {
@@ -118,7 +118,7 @@ export default async function OperatorDashboard() {
     <div className="bg-[#f8fafb] text-[#191c1d] min-h-screen pt-20">
       <div className="flex min-h-[calc(100vh-80px)]">
         {/* Sidebar Navigation (Desktop) */}
-        <aside className="hidden md:flex flex-col h-auto w-80 bg-white p-4 space-y-4 border-r border-[#bfc9c4]/20 shadow-sm">
+        <aside className="hidden md:flex flex-col sticky top-20 h-[calc(100vh-80px)] overflow-y-auto w-80 bg-white p-4 space-y-4 border-r border-[#bfc9c4]/20 shadow-sm z-10">
           <div className="flex flex-col gap-1 p-4 bg-[#f2f4f5] rounded-xl mb-4">
             <span className="text-xl font-bold text-[#00342b] capitalize">{profile.role}</span>
             <span className="text-sm font-semibold text-[#3f4945]">Pather Saathi Partner</span>
@@ -253,7 +253,7 @@ export default async function OperatorDashboard() {
                         const sched = b.schedules
                         const originName = sched?.routes?.origin?.name || 'Unknown'
                         const destName = sched?.routes?.destination?.name || 'Unknown'
-                        
+
                         const startDateObj = b.start_date ? new Date(b.start_date) : null
                         const endDateObj = b.end_date ? new Date(b.end_date) : null
 
@@ -305,8 +305,8 @@ export default async function OperatorDashboard() {
                             <td className="px-6 py-4 text-sm text-[#191c1d]">
                               {isWholeVehicle ? (
                                 <>
-                                  <div className="font-medium">Start: {startDateObj?.toLocaleDateString('en-IN', { month: 'short', day: 'numeric'})}</div>
-                                  <div className="text-xs text-[#3f4945]">End: {endDateObj?.toLocaleDateString('en-IN', { month: 'short', day: 'numeric'})}</div>
+                                  <div className="font-medium">Start: {startDateObj?.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</div>
+                                  <div className="text-xs text-[#3f4945]">End: {endDateObj?.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</div>
                                 </>
                               ) : (
                                 <div className="font-medium">{b.travel_date}</div>
@@ -317,12 +317,11 @@ export default async function OperatorDashboard() {
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-between gap-4">
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                                  b.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                                  b.status === 'approved' ? 'bg-green-100 text-green-700' : 
-                                  b.status === 'rejected' ? 'bg-red-100 text-red-700' : 
-                                  'bg-gray-200 text-gray-800'
-                                }`}>
+                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${b.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    b.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                      b.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                        'bg-gray-200 text-gray-800'
+                                  }`}>
                                   {b.status}
                                 </span>
                                 <BookingActionButtons bookingId={b.id} currentStatus={b.status} />

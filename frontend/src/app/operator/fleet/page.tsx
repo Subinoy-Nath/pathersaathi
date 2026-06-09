@@ -114,7 +114,7 @@ export default async function FleetPage() {
     <div className="bg-[#f8fafb] text-[#191c1d] min-h-screen pt-20">
       <div className="flex min-h-[calc(100vh-80px)]">
         {/* Sidebar Navigation (Desktop) */}
-        <aside className="hidden md:flex flex-col h-auto w-80 bg-white p-4 space-y-4 border-r border-[#bfc9c4]/20 shadow-sm">
+        <aside className="hidden md:flex flex-col sticky top-20 h-[calc(100vh-80px)] overflow-y-auto w-80 bg-white p-4 space-y-4 border-r border-[#bfc9c4]/20 shadow-sm z-10">
           <div className="flex flex-col gap-1 p-4 bg-[#f2f4f5] rounded-xl mb-4">
             <span className="text-xl font-bold text-[#00342b] capitalize">{profile.role}</span>
             <span className="text-sm font-semibold text-[#3f4945]">Pather Saathi Partner</span>

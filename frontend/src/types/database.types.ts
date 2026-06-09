@@ -467,7 +467,7 @@ export type Database = {
       update_booking_status_atomic: {
         Args: {
           p_booking_id: string
-          p_operator_id: string
+          p_actor_id: string
           p_new_status: string
           p_reason?: string
         }

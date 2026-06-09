@@ -25,7 +25,7 @@ export async function updateBookingStatus(
   // 2. Call the atomic PostgreSQL function
   const { error: rpcError } = await supabase.rpc('update_booking_status_atomic', {
     p_booking_id: bookingId,
-    p_operator_id: user.id,
+    p_actor_id: user.id,
     p_new_status: status,
     p_reason: reason || undefined
   })

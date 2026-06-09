@@ -469,7 +469,7 @@ export type Database = {
           p_booking_id: string
           p_actor_id: string
           p_new_status: string
-          p_reason?: string
+          p_reason?: string | null
         }
         Returns: boolean
       }

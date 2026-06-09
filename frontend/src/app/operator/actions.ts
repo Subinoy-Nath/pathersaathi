@@ -27,7 +27,7 @@ export async function updateBookingStatus(
     p_booking_id: bookingId,
     p_actor_id: user.id,
     p_new_status: status,
-    p_reason: reason || undefined
+    p_reason: reason || null
   })
 
   if (rpcError) {

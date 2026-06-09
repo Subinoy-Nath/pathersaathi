@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Database } from '@/types/database.types';
@@ -51,6 +51,26 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
 
   const busesRef = useRef<HTMLElement | null>(null);
   const [parent] = useAutoAnimate();
+
+  useEffect(() => {
+    if (ticketResult?.success && ticketResult.operator_whatsapp) {
+      const url = `https://wa.me/${(ticketResult.operator_whatsapp || '').replace(/[^0-9]/g, '')}?text=Hello,%20I%20have%20booked%20a%20ticket%20on%20Pather%20Saathi.%20My%20booking%20reference%20is%20${ticketResult.booking_reference}.`
+      const timer = setTimeout(() => {
+        window.open(url, '_blank')
+      }, 800)
+      return () => clearTimeout(timer)
+    }
+  }, [ticketResult])
+
+  useEffect(() => {
+    if (busResult?.success && busResult.operator_whatsapp) {
+      const url = `https://wa.me/${(busResult.operator_whatsapp || '').replace(/[^0-9]/g, '')}?text=Hello,%20I%20have%20booked%20a%20charter%20vehicle%20on%20Pather%20Saathi.%20My%20booking%20reference%20is%20${busResult.booking_reference}.`
+      const timer = setTimeout(() => {
+        window.open(url, '_blank')
+      }, 800)
+      return () => clearTimeout(timer)
+    }
+  }, [busResult])
 
   const toggleBusSelection = (busId: string) => {
     setSelectedBuses((prev) =>

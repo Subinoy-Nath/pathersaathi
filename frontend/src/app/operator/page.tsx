@@ -5,6 +5,7 @@ import Link from 'next/link'
 import BookingActionButtons from '@/components/BookingActionButtons'
 import LiveBookingsRefresher from '@/components/LiveBookingsRefresher'
 import ClearHistoryButton from '@/components/ClearHistoryButton'
+import AnimatedTableBody from '@/components/AnimatedTableBody'
 import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
@@ -239,8 +240,18 @@ export default async function OperatorDashboard() {
               <h2 className="text-xl font-bold text-[#00342b]">Recent Bookings</h2>
               <div className="flex gap-2">
                 <ClearHistoryButton />
-                <button className="bg-[#e6e8e9] px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-[#e1e3e4] transition-colors">Export CSV</button>
-                <button className="bg-[#e6e8e9] px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-[#e1e3e4] transition-colors">Filters</button>
+                <button 
+                  className="bg-[#e6e8e9] px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-[#d8dbdc] hover:-translate-y-0.5 transition-all duration-200"
+                  title="Export currently visible bookings to a CSV file"
+                >
+                  Export CSV
+                </button>
+                <button 
+                  className="bg-[#e6e8e9] px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-[#d8dbdc] hover:-translate-y-0.5 transition-all duration-200"
+                  title="Filter bookings by date, status, or route"
+                >
+                  Filters
+                </button>
               </div>
             </div>
 
@@ -257,10 +268,18 @@ export default async function OperatorDashboard() {
                       <th className="px-6 py-4 text-sm text-[#00342b] font-bold uppercase tracking-wider">Status & Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#bfc9c4]/20">
+                  <AnimatedTableBody className="divide-y divide-[#bfc9c4]/20">
                     {bookings.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-12 text-center text-[#3f4945] text-base font-medium">No recent bookings found.</td>
+                        <td colSpan={6} className="py-16 text-center">
+                          <div className="flex flex-col items-center justify-center gap-3">
+                            <div className="w-16 h-16 rounded-full bg-white/50 flex items-center justify-center mb-2 shadow-inner border border-white/60">
+                              <span className="material-symbols-outlined text-4xl text-[#bfc9c4]">inbox</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-[#00342b]">No Bookings Yet</h3>
+                            <p className="text-sm text-[#3f4945] max-w-xs mx-auto">When customers book your vehicles, they will appear here automatically.</p>
+                          </div>
+                        </td>
                       </tr>
                     ) : (
                       bookings.map((b: Record<string, any>) => {
@@ -356,7 +375,7 @@ export default async function OperatorDashboard() {
                         )
                       })
                     )}
-                  </tbody>
+                  </AnimatedTableBody>
                 </table>
               </div>
             </div>

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateBookingStatus } from '@/app/operator/actions'
+import { toast } from 'sonner'
 
 type BookingActionButtonsProps = {
   bookingId: string
@@ -23,8 +24,9 @@ export default function BookingActionButtons({ bookingId, currentStatus, custome
     startTransition(async () => {
       const result = await updateBookingStatus(bookingId, status, reason)
       if (result.error) {
-        alert(result.error)
+        toast.error(result.error)
       } else {
+        toast.success(`Booking ${status} successfully`)
         setShowCancelForm(false)
         setShowRejectInput(false)
         setCancelReason('')

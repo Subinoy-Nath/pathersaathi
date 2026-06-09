@@ -178,18 +178,36 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                   </div>
                 </div>
               ) : ticketResult?.error ? (
-                <div className="p-5 bg-red-50 rounded-xl flex flex-col items-center text-center border border-red-100">
-                  <p className="text-red-700 font-medium mb-4">{ticketResult.error}</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTicketResult(null)
-                      setSearchStep(0)
-                    }}
-                    className="text-sm font-semibold text-[#006493] hover:underline flex items-center gap-1"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">arrow_back</span> Back to Search
-                  </button>
+                <div className="p-8 bg-gradient-to-b from-[#f4fbf9] to-white rounded-3xl flex flex-col items-center text-center border border-[#e2f1ec] shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#00affe] to-[#006493]"></div>
+                  <div className="w-20 h-20 bg-[#e2f1ec] rounded-full flex items-center justify-center mb-5 shadow-inner">
+                    <span className="material-symbols-outlined text-4xl text-[#006493]">
+                      {ticketResult.error.includes('seats') || ticketResult.error.includes('schedules') ? 'event_busy' : 'error_outline'}
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-[#00342b] mb-3">
+                    {ticketResult.error.includes('seats') || ticketResult.error.includes('schedules') ? 'Fully Booked' : 'Search Update'}
+                  </h3>
+                  <p className="text-[#3f4945] text-base mb-8 px-2 sm:px-6 leading-relaxed">
+                    {ticketResult.error.includes('seats') ? "We couldn't find any buses with enough available seats for this route on your selected date." : 
+                     ticketResult.error.includes('schedules') ? "There are no buses scheduled for this route on your selected date." : 
+                     ticketResult.error}
+                    <br />
+                    <span className="text-sm mt-3 inline-block text-gray-500 font-medium">Don't worry, adjusting your date or route usually helps!</span>
+                  </p>
+                  
+                  <div className="flex flex-col sm:flex-row w-full gap-3 sm:px-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTicketResult(null)
+                        setSearchStep(0)
+                      }}
+                      className="bg-[#00affe] text-white px-6 py-3.5 rounded-xl font-bold shadow-md hover:bg-[#009ae0] hover:shadow-lg hover:-translate-y-0.5 transition-all w-full flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">edit_calendar</span> Modify Search
+                    </button>
+                  </div>
                 </div>
               ) : ticketResult?.success ? (
                 <div className="p-6 bg-green-50 rounded-xl flex flex-col items-center text-center">

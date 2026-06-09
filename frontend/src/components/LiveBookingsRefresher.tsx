@@ -24,8 +24,14 @@ export default function LiveBookingsRefresher() {
         (payload) => {
           console.log('Live booking update received:', payload)
           if (payload.eventType === 'INSERT') {
+            // Operator sees new booking
             toast.success('New Booking Received', {
               description: 'Dashboard updated with new live booking.',
+            })
+          } else if (payload.eventType === 'UPDATE') {
+            // Customer or Operator sees status change
+            toast.success('Booking Updated', {
+              description: 'A booking status was recently changed.',
             })
           }
           // Refresh the current route to fetch new data

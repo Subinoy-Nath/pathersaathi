@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import CustomerCancelButton from '@/components/CustomerCancelButton'
+import LiveBookingsRefresher from '@/components/LiveBookingsRefresher'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,9 +53,10 @@ export default async function BookingsPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f8fafb] py-10 px-4 sm:px-6 lg:px-8 pt-24">
+      <LiveBookingsRefresher />
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-8">My Bookings</h1>
+        <h1 className="text-3xl font-extrabold text-[#00342b] mb-8">My Bookings</h1>
 
         {(!bookings || bookings.length === 0) ? (
           <div className="glass-card rounded-3xl border border-white/60 p-16 text-center flex flex-col items-center justify-center luminous-shadow relative overflow-hidden mt-8">

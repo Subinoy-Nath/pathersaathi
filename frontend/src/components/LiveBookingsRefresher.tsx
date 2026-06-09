@@ -4,6 +4,7 @@ import { useEffect, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
+import { forceDataRefresh } from '@/app/actions'
 
 export default function LiveBookingsRefresher() {
   const router = useRouter()
@@ -21,7 +22,7 @@ export default function LiveBookingsRefresher() {
           schema: 'public',
           table: 'bookings'
         },
-        (payload) => {
+        async (payload) => {
           console.log('Live booking update received:', payload)
           if (payload.eventType === 'INSERT') {
             // Operator sees new booking
@@ -34,7 +35,8 @@ export default function LiveBookingsRefresher() {
               description: 'A booking status was recently changed.',
             })
           }
-          // Refresh the current route to fetch new data
+          // Force the server cache to drop, then refresh client
+          await forceDataRefresh()
           startTransition(() => {
             router.refresh()
           })

@@ -282,3 +282,7 @@ export async function createWholeVehicleBooking(formData: FormData) {
     message: 'Whole vehicle booking submitted!'
   }
 }
+
+export async function forceDataRefresh() {
+  revalidatePath('/', 'layout')
+}

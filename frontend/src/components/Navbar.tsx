@@ -142,6 +142,15 @@ export default function Navbar({ user, role }: NavbarProps) {
                 </Link>
               </>
             )}
+            {!user && (
+              <div className="flex-1 flex flex-col items-center justify-center text-center opacity-80 mt-8 mb-4">
+                <div className="w-32 h-32 bg-gradient-to-br from-[#e2f1ec] to-white rounded-full flex items-center justify-center mb-6 shadow-inner border border-white/60">
+                  <span className="material-symbols-outlined text-[56px] text-[#00affe]">directions_bus</span>
+                </div>
+                <h3 className="text-2xl font-bold text-[#00342b] mb-2">Welcome Aboard</h3>
+                <p className="text-base text-[#3f4945] max-w-[260px] leading-relaxed">Log in to track your bookings and unlock seamless travel across Barak Valley.</p>
+              </div>
+            )}
           </div>
 
           <div className="pt-8 mt-auto border-t border-[#bfc9c4]/30 flex flex-col space-y-4">

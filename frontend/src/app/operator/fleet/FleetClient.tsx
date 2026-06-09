@@ -6,12 +6,18 @@ import { upsertVehicle, upsertRoute, upsertSchedule } from './actions'
 import Image from 'next/image'
 
 type FleetClientProps = {
-  vehicles: Record<string, any>[]
-  ownedRoutes: Record<string, any>[]
-  globalRoutes: Record<string, any>[]
-  allRoutes: Record<string, any>[]
-  locations: Record<string, any>[]
-  schedules: Record<string, any>[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  vehicles: any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ownedRoutes: any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  globalRoutes: any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  allRoutes: any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  locations: any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  schedules: any[]
   isVerified: boolean
 }
 

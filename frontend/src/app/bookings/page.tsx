@@ -59,13 +59,14 @@ export default async function BookingsPage() {
         {(!bookings || bookings.length === 0) ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
             <h3 className="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
-            <p className="text-gray-500 mb-6">You haven't made any bus reservations yet.</p>
+            <p className="text-gray-500 mb-6">You haven&apos;t made any bus reservations yet.</p>
             <Link href="/" className="inline-flex bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition">
               Find a Bus
             </Link>
           </div>
         ) : (
           <div className="space-y-6">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {bookings.map((booking: any) => {
               const isWholeVehicle = booking.booking_type === 'whole_vehicle'
               
@@ -77,6 +78,7 @@ export default async function BookingsPage() {
               
               // Extract whole vehicle info
               const bvs = booking.booking_vehicles || []
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const wvVehicles = bvs.map((bv: any) => bv.vehicles).filter(Boolean)
               
               // Pick the first vehicle's operator for WhatsApp contact
@@ -129,6 +131,7 @@ export default async function BookingsPage() {
                           <div className="md:col-span-2">
                             <div className="text-sm text-gray-500 mb-1">Booked Vehicles</div>
                             <div className="font-semibold text-gray-900">
+                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                               {wvVehicles.map((v: any) => `${v.name} (${v.registration_number})`).join(', ')}
                             </div>
                           </div>

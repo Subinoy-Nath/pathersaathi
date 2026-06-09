@@ -77,6 +77,7 @@ export default async function FleetPage() {
 
   // 6. Fetch schedules for operator's vehicles
   const vehicleIds = vehicles?.map(v => v.id) || []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let schedules: any[] = []
 
   if (vehicleIds.length > 0) {

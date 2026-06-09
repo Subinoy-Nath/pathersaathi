@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { login, signup } from './actions';
 import Image from 'next/image';
@@ -27,9 +27,7 @@ function SubmitButton({ pendingText, children, className = "" }: { pendingText: 
 export default function LoginForm({ message, initialMode }: { message?: string; initialMode?: string }) {
   const [isLogin, setIsLogin] = useState(initialMode !== 'signup');
 
-  useEffect(() => {
-    setIsLogin(initialMode !== 'signup');
-  }, [initialMode]);
+
 
   return (
     <div className="auth-bg min-h-screen flex flex-col items-center justify-start p-4 pt-20 md:pt-24 pb-12 relative w-full text-[#191c1d]">

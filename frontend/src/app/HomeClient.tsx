@@ -32,7 +32,17 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
   const [ticketResult, setTicketResult] = useState<BookingResult | null>(null);
 
   const [searchStep, setSearchStep] = useState<0 | 1>(0);
-  const [availableSchedules, setAvailableSchedules] = useState<any[]>([]);
+  
+  type AvailableSchedule = {
+    id: string;
+    departure_time: string;
+    arrival_time: string;
+    available_seats: number;
+    base_fare: number | null;
+    vehicles: { name: string; registration_number: string | null } | null;
+  };
+
+  const [availableSchedules, setAvailableSchedules] = useState<AvailableSchedule[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchParams, setSearchParams] = useState({ seats: '1', travelDate: '' });
 

@@ -12,7 +12,7 @@ export async function cancelBooking(bookingId: string) {
   }
 
   // Call the atomic PostgreSQL function
-  const { data: result, error: rpcError } = await supabase.rpc('cancel_booking_atomic', {
+  const { error: rpcError } = await supabase.rpc('cancel_booking_atomic', {
     p_booking_id: bookingId,
     p_customer_id: user.id
   })

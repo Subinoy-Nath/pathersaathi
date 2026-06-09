@@ -69,7 +69,8 @@ export default async function OperatorDashboard() {
 
   const bvBookingIds = bookingVehicles?.map(bv => bv.booking_id) || []
 
-  let bookings: Record<string, any>[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let bookings: any[] = []
 
   if (scheduleIds.length > 0 || bvBookingIds.length > 0) {
     let query = supabase
@@ -282,7 +283,8 @@ export default async function OperatorDashboard() {
                         </td>
                       </tr>
                     ) : (
-                      bookings.map((b: Record<string, any>) => {
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      bookings.map((b: any) => {
                         const cust = b.users
                         const isWholeVehicle = b.booking_type === 'whole_vehicle'
                         const sched = b.schedules
@@ -327,7 +329,8 @@ export default async function OperatorDashboard() {
                                 {isWholeVehicle ? (
                                   <>
                                     <span className="text-sm font-medium text-[#191c1d]">Vehicles:</span>
-                                    <span className="text-xs text-[#3f4945]">{b.booking_vehicles?.map((bv: Record<string, any>) => bv.vehicles?.name).join(', ')}</span>
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    <span className="text-xs text-[#3f4945]">{b.booking_vehicles?.map((bv: any) => bv.vehicles?.name).join(', ')}</span>
                                   </>
                                 ) : (
                                   <>

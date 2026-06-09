@@ -143,7 +143,7 @@ export async function createTicketBooking(formData: FormData) {
   // 7. Create booking (seats are already atomically reserved)
   const bookingReference = generateBookingReference()
 
-  const { data: booking, error: bookingError } = await supabase
+  const { error: bookingError } = await supabase
     .from('bookings')
     .insert({
       booking_reference: bookingReference,
@@ -169,7 +169,7 @@ export async function createTicketBooking(formData: FormData) {
   revalidatePath('/')
 
   // Extract operator whatsapp number
-  const vehicleData: any = selectedSchedule.vehicles
+  const vehicleData = selectedSchedule.vehicles as { users?: { whatsapp_number?: string } | null } | null | undefined
   const operatorData = vehicleData?.users
   const whatsapp = operatorData?.whatsapp_number || '+916002089037'
 
@@ -255,7 +255,7 @@ export async function createWholeVehicleBooking(formData: FormData) {
   // 5. Create atomic booking via RPC (Bypasses restrictive RLS on booking_vehicles)
   const bookingReference = generateBookingReference()
 
-  const { data: bookingId, error: rpcError } = await supabase.rpc('book_whole_vehicle_atomic', {
+  const { error: rpcError } = await supabase.rpc('book_whole_vehicle_atomic', {
     p_vehicle_ids: vehicleIds,
     p_travel_date: travelDateObj.toISOString().split('T')[0],
     p_occasion: occasion.trim(),
@@ -270,7 +270,7 @@ export async function createWholeVehicleBooking(formData: FormData) {
   revalidatePath('/')
 
   // 7. Get first operator's WhatsApp for redirect
-  const firstVehicle: any = vehicles[0]
+  const firstVehicle = vehicles[0] as { users?: { whatsapp_number?: string } | null } | null | undefined
   const operatorWhatsapp = firstVehicle?.users?.whatsapp_number || '+916002089037'
   const vehicleNames = vehicles.map(v => v.name).join(', ')
 

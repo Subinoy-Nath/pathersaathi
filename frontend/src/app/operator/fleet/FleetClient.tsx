@@ -411,6 +411,15 @@ export default function FleetClient({
                     className="w-full border border-[#bfc9c4] bg-[#f8fafb] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#00affe] transition-all text-[#191c1d]"
                     placeholder="250.00" />
                 </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#3f4945] mb-2">Repeat Daily For</label>
+                  <select name="repeat_days" className="w-full border border-[#bfc9c4] bg-[#f8fafb] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#00affe] transition-all text-[#191c1d]">
+                    <option value="1">No Repeat (1 Day)</option>
+                    <option value="7">7 Days</option>
+                    <option value="15">15 Days</option>
+                    <option value="30">30 Days</option>
+                  </select>
+                </div>
               </div>
               <div className="flex justify-end pt-4 border-t border-[#bfc9c4]/30">
                 <button type="submit" disabled={loading}

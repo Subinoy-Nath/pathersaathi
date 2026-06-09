@@ -256,22 +256,36 @@ export async function upsertSchedule(formData: FormData) {
   }
 
   const base_fare = base_fare_str ? parseFloat(base_fare_str) : null
+  const repeat_days_str = formData.get('repeat_days') as string
+  const repeat_days = repeat_days_str ? parseInt(repeat_days_str) : 1
 
-  const { error: insertError } = await supabase
-    .from('schedules')
-    .insert({
+  if (isNaN(repeat_days) || repeat_days < 1 || repeat_days > 30) {
+    return { success: false, error: 'Repeat days must be between 1 and 30.' }
+  }
+
+  const schedulesToInsert = []
+  
+  for (let i = 0; i < repeat_days; i++) {
+    const iterDeparture = new Date(departureDate.getTime() + i * 24 * 60 * 60 * 1000)
+    const iterArrival = new Date(arrivalDate.getTime() + i * 24 * 60 * 60 * 1000)
+    
+    schedulesToInsert.push({
       vehicle_id,
       route_id,
-      departure_time,
-      arrival_time,
+      departure_time: iterDeparture.toISOString(),
+      arrival_time: iterArrival.toISOString(),
       total_seats,
       available_seats: total_seats,
       base_fare,
       status: 'scheduled',
     })
+  }
 
-  if (insertError) {
-    return { success: false, error: 'Failed to create schedule: ' + insertError.message }
+  const { error: rpcError } = await supabase
+    .rpc('upsert_schedules', { p_schedules: schedulesToInsert })
+
+  if (rpcError) {
+    return { success: false, error: 'Failed to create schedule(s): ' + rpcError.message }
   }
 
   revalidatePath('/operator/fleet')

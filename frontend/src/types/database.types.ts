@@ -473,6 +473,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      upsert_schedules: {
+        Args: {
+          p_schedules: Json
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

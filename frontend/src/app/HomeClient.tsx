@@ -178,8 +178,18 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                   </div>
                 </div>
               ) : ticketResult?.error ? (
-                <div className="p-4 bg-red-50 text-red-700 rounded-xl font-medium">
-                  {ticketResult.error}
+                <div className="p-5 bg-red-50 rounded-xl flex flex-col items-center text-center border border-red-100">
+                  <p className="text-red-700 font-medium mb-4">{ticketResult.error}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTicketResult(null)
+                      setSearchStep(0)
+                    }}
+                    className="text-sm font-semibold text-[#006493] hover:underline flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">arrow_back</span> Back to Search
+                  </button>
                 </div>
               ) : ticketResult?.success ? (
                 <div className="p-6 bg-green-50 rounded-xl flex flex-col items-center text-center">

@@ -188,7 +188,7 @@ export default async function OperatorDashboard() {
                   <div key={v.id} className="glass-card electric-glow p-5 rounded-xl border border-white/40 flex flex-col gap-4 group hover:-translate-y-1 transition-transform duration-300">
                     <div className="w-full h-32 rounded-lg bg-[#e6e8e9] overflow-hidden relative flex items-center justify-center text-[#3f4945]">
                       {v.image_url ? (
-                        <Image src={v.image_url} alt={v.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized />
+                        <Image src={v.image_url} alt={v.name} fill className="object-contain p-2 group-hover:scale-105 transition-transform duration-500" unoptimized />
                       ) : (
                         <span className="material-symbols-outlined text-4xl">directions_bus</span>
                       )}
@@ -301,10 +301,14 @@ export default async function OperatorDashboard() {
                             </td>
                             <td className="px-6 py-4 text-sm text-[#191c1d]">
                               {isWholeVehicle ? (
-                                <>
-                                  <div className="font-medium">Start: {startDateObj?.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</div>
-                                  <div className="text-xs text-[#3f4945]">End: {endDateObj?.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</div>
-                                </>
+                                startDateObj && endDateObj ? (
+                                  <>
+                                    <div className="font-medium">Start: {startDateObj.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</div>
+                                    <div className="text-xs text-[#3f4945]">End: {endDateObj.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</div>
+                                  </>
+                                ) : (
+                                  <div className="font-medium">{b.travel_date}</div>
+                                )
                               ) : (
                                 <div className="font-medium">{b.travel_date}</div>
                               )}

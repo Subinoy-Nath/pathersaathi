@@ -200,7 +200,7 @@ export default function FleetClient({
                 <div key={v.id} className="glass-card electric-glow p-5 rounded-xl border border-white/40 flex flex-col gap-4 group hover:-translate-y-1 transition-transform duration-300">
                   <div className="w-full h-40 rounded-lg bg-[#e6e8e9] overflow-hidden relative flex items-center justify-center text-[#3f4945]">
                     {v.image_url ? (
-                      <Image src={v.image_url} alt={v.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized />
+                      <Image src={v.image_url} alt={v.name} fill className="object-contain p-2 group-hover:scale-105 transition-transform duration-500" unoptimized />
                     ) : (
                       <span className="material-symbols-outlined text-5xl">directions_bus</span>
                     )}

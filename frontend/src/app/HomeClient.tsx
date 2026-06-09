@@ -355,7 +355,11 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
             {vehicles.map((bus) => {
               const selected = selectedBuses.includes(bus.id);
               return (
-                <div key={bus.id} className={`bg-white rounded-[16px] overflow-hidden border ${selected ? 'border-[#00affe] ring-2 ring-[#00affe]' : 'border-[#bfc9c4]/50'} luminous-shadow group hover:-translate-y-2 transition-all duration-300 relative`}>
+                <div 
+                  key={bus.id} 
+                  onClick={() => toggleBusSelection(bus.id)}
+                  className={`bg-white rounded-[16px] overflow-hidden border ${selected ? 'border-[#00affe] ring-2 ring-[#00affe]' : 'border-[#bfc9c4]/50'} luminous-shadow group hover:-translate-y-2 transition-all duration-300 relative cursor-pointer`}
+                >
                   <div className="relative h-56 overflow-hidden bg-gray-50 flex items-center justify-center">
                     {bus.image_url ? (
                       <Image
@@ -395,8 +399,7 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
 
                     <button
                       type="button"
-                      onClick={() => toggleBusSelection(bus.id)}
-                      className={`w-full py-3 rounded-xl font-semibold transition-all ${selected
+                      className={`w-full py-3 rounded-xl font-semibold transition-all pointer-events-none ${selected
                         ? 'bg-[#00affe] text-white shadow-md'
                         : 'border-2 border-[#004d40]/10 text-[#00342b] hover:bg-[#004d40] hover:text-white'
                         }`}

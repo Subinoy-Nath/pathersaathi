@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import BookingActionButtons from '@/components/BookingActionButtons'
+import LiveBookingsRefresher from '@/components/LiveBookingsRefresher'
 import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
@@ -140,12 +141,8 @@ export default async function OperatorDashboard() {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-5 md:p-8 space-y-8 pb-32 md:pb-12">
-          {/* Mobile Profile Card */}
-          <div className="md:hidden flex flex-col gap-1 p-5 bg-gradient-to-r from-[#00342b] to-[#004d40] rounded-xl shadow-lg text-white mb-2">
-            <span className="text-xl font-bold capitalize">{profile.role}</span>
-            <span className="text-sm font-medium text-[#afefdd]">Pather Saathi Partner</span>
-          </div>
+        <main className="flex-1 min-w-0 p-4 md:p-8 space-y-8">
+          <LiveBookingsRefresher />
 
           {/* Header Section */}
           <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -318,13 +315,18 @@ export default async function OperatorDashboard() {
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-between gap-4">
                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${b.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                    b.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                      b.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                        'bg-gray-200 text-gray-800'
+                                  b.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                    b.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                      'bg-gray-200 text-gray-800'
                                   }`}>
                                   {b.status}
                                 </span>
-                                <BookingActionButtons bookingId={b.id} currentStatus={b.status} />
+                                <BookingActionButtons
+                                  bookingId={b.id}
+                                  currentStatus={b.status}
+                                  customerPhone={cust?.phone_number}
+                                  bookingReference={b.booking_reference}
+                                />
                               </div>
                             </td>
                           </tr>

@@ -6,9 +6,11 @@ import { updateBookingStatus } from '@/app/operator/actions'
 type BookingActionButtonsProps = {
   bookingId: string
   currentStatus: string
+  customerPhone?: string
+  bookingReference?: string
 }
 
-export default function BookingActionButtons({ bookingId, currentStatus }: BookingActionButtonsProps) {
+export default function BookingActionButtons({ bookingId, currentStatus, customerPhone, bookingReference }: BookingActionButtonsProps) {
   const [isPending, startTransition] = useTransition()
   const [showCancelForm, setShowCancelForm] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
@@ -25,6 +27,21 @@ export default function BookingActionButtons({ bookingId, currentStatus }: Booki
         setShowRejectInput(false)
         setCancelReason('')
         setRejectReason('')
+
+        // Trigger WhatsApp confirmation if approved and phone exists
+        if (status === 'approved' && customerPhone) {
+          // Clean phone number (remove non-digits)
+          const cleanPhone = customerPhone.replace(/\D/g, '')
+          // Ensure it has country code, default to India if 10 digits
+          const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone
+          
+          const message = encodeURIComponent(
+            `Hello! Your booking with Pather Saathi (Ref: ${bookingReference || bookingId}) has been CONFIRMED. Thank you for choosing us for your journey!`
+          )
+          
+          // Open WhatsApp in a new tab
+          window.open(`https://wa.me/${finalPhone}?text=${message}`, '_blank')
+        }
       }
     })
   }

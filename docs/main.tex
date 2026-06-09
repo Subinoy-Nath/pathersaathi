@@ -21,6 +21,7 @@
 \usepackage{microtype}
 \usepackage{parskip}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{float}
 \usepackage{tabularx}
 \usepackage{multirow}
@@ -37,6 +38,16 @@
 \definecolor{codegreen}{RGB}{0, 128, 0}
 \definecolor{codegray}{RGB}{128, 128, 128}
 \definecolor{codered}{RGB}{180, 0, 0}
+
+% IEEE Pastel Colors for TikZ Diagrams
+\definecolor{pastelblue}{RGB}{230, 240, 255}
+\definecolor{pastelgreen}{RGB}{230, 250, 230}
+\definecolor{pastelred}{RGB}{255, 235, 235}
+\definecolor{pastelyellow}{RGB}{255, 250, 220}
+\definecolor{pastelpurple}{RGB}{240, 230, 250}
+\definecolor{pastelorange}{RGB}{255, 240, 225}
+\definecolor{pastelgray}{RGB}{245, 245, 245}
+\definecolor{ieeedark}{RGB}{40, 40, 40}
 
 % Code Listing Style
 \lstset{
@@ -89,25 +100,25 @@
   arc=0mm, top=3mm, bottom=3mm, left=3mm, right=3mm, #1
 }
 \newtcolorbox{keyfinding}[1][]{
-  enhanced, colback=white, colframe=brandblue, coltitle=white,
+  enhanced, colback=pastelgreen, colframe=brandteal, coltitle=white,
   title=\textbf{Key Finding}, fonttitle=\bfseries,
   attach boxed title to top left={yshift=-2mm, xshift=5mm},
   boxed title style={sharp corners},
-  arc=0mm, top=3mm, bottom=3mm, left=3mm, right=3mm, #1
+  arc=3mm, top=3mm, bottom=3mm, left=3mm, right=3mm, #1
 }
-\newtcolorbox{lessonslearned}[1][]{
-  enhanced, colback=white, colframe=codered, coltitle=white,
-  title=\textbf{Lesson Learned}, fonttitle=\bfseries,
+\newtcolorbox{challengebox}[1][]{
+  enhanced, colback=white, colframe=darkgray, coltitle=white,
+  title=\textbf{#1}, fonttitle=\bfseries,
   attach boxed title to top left={yshift=-2mm, xshift=5mm},
   boxed title style={sharp corners},
-  arc=0mm, top=3mm, bottom=3mm, left=3mm, right=3mm, #1
+  arc=2mm, top=3mm, bottom=3mm, left=3mm, right=3mm
 }
 
 % Screenshot Macro
 \newcommand{\screenshot}[3]{
   \begin{figure}[htbp]
       \centering
-      \begin{tcolorbox}[enhanced, colback=lightgray!20, colframe=darkgray, boxrule=0.5pt, arc=2mm, width=0.85\textwidth]
+      \begin{tcolorbox}[enhanced, drop shadow, colback=lightgray!20, colframe=darkgray, boxrule=0.5pt, arc=2mm, width=0.85\textwidth]
           \centering
           #1
       \end{tcolorbox}
@@ -121,6 +132,8 @@
 % Spacing
 \setstretch{1.2}
 \setlength{\parskip}{4pt}
+\clubpenalty=10000
+\widowpenalty=10000
 
 \titlespacing*{\chapter}{0pt}{-20pt}{15pt}
 \begin{document}
@@ -247,7 +260,7 @@ We are profoundly grateful to \textbf{BARAK VALLEY ENGINEERING COLLEGE} for fost
 
 A special note of acknowledgement goes to the local fleet operators in Barak Valley, specifically those operating the Silchar-Hailakandi route, who generously participated in our field surveys. Their firsthand insights into the daily operational challenges of manual fleet management provided the foundational requirements for this platform.
 
-Finally, we acknowledge the transformative impact of open-source tools and AI platforms in our development workflow. The integration of Next.js, Supabase, and Vercel, alongside the orchestration of AI models via the Model Context Protocol (MCP), fundamentally empowered us to deliver an enterprise-grade solution within the constraints of a student project.
+Finally, we acknowledge the open-source tools and AI platforms in our development workflow. The integration of Next.js, Supabase, and Vercel, alongside the orchestration of AI models via the Model Context Protocol (MCP), enabled us to efficiently develop and deploy a production-ready web platform.
 \end{spacing}
 
 % --- ABSTRACT PAGE ---
@@ -263,7 +276,7 @@ Inter-district transportation in Tier-3 Indian regions, specifically Barak Valle
 
 The platform implements atomic booking allocation using robust PostgreSQL Row Level Security (RLS) policies and Role-Based Access Control (RBAC), completely eliminating concurrency issues. Unlike metropolitan solutions that force proprietary app adoption, Pather Saathi adopts a WhatsApp-first interaction model, leveraging deep-linking to route booking confirmations and operator communications through the universally adopted messenger layer.
 
-Methodologically, this project validates a multi-model AI-augmented development pipeline. Using the Model Context Protocol (MCP), AI agents were orchestrated to accelerate implementation while the human engineering team focused on architectural design and rigorous adversarial security audits. The final product was successfully deployed using a serverless architecture (Vercel and Supabase), achieving a highly scalable production environment with minimal monthly infrastructural cost. The result is a financially viable, enterprise-grade solution poised to democratise digital fleet management in underserved regions.
+Methodologically, this project validates a multi-model AI-augmented development pipeline. Using the Model Context Protocol (MCP), AI agents were orchestrated to accelerate implementation while the human engineering team focused on architectural design and rigorous adversarial security audits. The final product was successfully deployed using a serverless architecture (Vercel and Supabase), achieving a highly scalable production environment with minimal monthly infrastructural cost. The result is a cost-effective web platform suitable for digital fleet management in underserved regions.
 
 \vspace{1cm}
 \textbf{Keywords:} Fleet Booking, Barak Valley, Serverless Architecture, Row Level Security, AI-Augmented Development, Model Context Protocol, WhatsApp Integration.
@@ -292,10 +305,10 @@ Methodologically, this project validates a multi-model AI-augmented development 
 \chapter{Introduction and Objectives}
 
 \section{Background}
-The digital transformation of transportation infrastructure represents a critical catalyst for economic mobility in developing regions. In Tier 3 Indian geographies, particularly in regions characterised by complex topographies and underdeveloped digital ecosystems, the gap between available technology and local adoption remains historically significant. While metropolitan areas benefit from highly integrated mobility-as-a-service (MaaS) applications, rural and semi-urban districts continue to rely on informal, analogue methods for transit coordination. The infrastructural context in Northeast India, particularly Barak Valley, is challenging. Despite high smartphone penetration, the local transport sector remains technologically isolated, presenting a significant opportunity for digitisation.
+The digitisation of transportation infrastructure is an essential component of economic mobility in developing regions. In Tier 3 Indian geographies, particularly in areas characterised by complex topographies and underdeveloped digital ecosystems, the gap between available technology and local adoption remains significant. While metropolitan areas benefit from integrated mobility-as-a-service (MaaS) applications, rural and semi-urban districts rely on informal methods for transit coordination. The infrastructural context in Northeast India, particularly Barak Valley, is challenging. Despite high smartphone penetration, the local transport sector remains technologically isolated, presenting an opportunity for formal digitisation.
 
 \section{About the Project}
-``Pather Saathi'' is a web-based fleet booking platform developed for the socioeconomic and technological realities of Barak Valley. The platform serves two primary user cohorts: local fleet operators and the passengers who rely on these services. Geographically, the project targets the transit corridors connecting Silchar, Hailakandi, and Karimganj (Sribhumi). By leveraging low-friction communication channels like WhatsApp for confirmations alongside a Progressive Web Application (PWA) interface, the platform digitises the booking lifecycle. It enables customers to discover available routes and request seats, while providing operators with a cloud-based dashboard to manage their fleet and approve bookings.
+``Pather Saathi'' is a web-based fleet booking platform developed for the socioeconomic and technological realities of Barak Valley. The platform serves two primary user cohorts: local fleet operators and the passengers. Geographically, the project targets the transit corridors connecting Silchar, Hailakandi, and Karimganj (Sribhumi). By leveraging communication channels like WhatsApp for confirmations alongside a Progressive Web Application (PWA) interface, the platform digitises the booking lifecycle. It enables customers to discover available routes and request seats, while providing operators with a cloud-based dashboard to manage their fleet and approve bookings.
 
 \section{Objectives}
 The primary objectives of this project are:
@@ -304,35 +317,37 @@ The primary objectives of this project are:
     \item To enable real-time seat availability tracking to resolve the systemic issue of double bookings.
     \item To implement a secure, multi-tenant operator dashboard enforcing strict Role-Based Access Control (RBAC).
     \item To evaluate an AI-augmented development methodology leveraging Model Context Protocol (MCP) tooling.
-    \item To deploy a highly available system using a serverless architecture with minimal infrastructure overhead.
+    \item To deploy a reliable system using a serverless architecture with minimal infrastructure overhead.
     \item To validate the system's security posture via rigorous testing of database policies.
 \end{itemize}
 
 \section{Key Contributions}
-This project provides several key technical contributions to the field of localized software engineering:
+This project provides several key technical contributions to the field of localised software engineering:
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Serverless Architecture:} Developed a highly scalable fleet management system using Next.js and Supabase.
+    \item \textbf{Serverless Architecture:} Designed a scalable fleet management system using Next.js and Supabase.
     \item \textbf{WhatsApp Deep-Link Protocol:} Implemented a seamless booking confirmation flow utilizing \texttt{wa.me} dynamic URI generation.
     \item \textbf{Atomic Seat Allocation:} Implemented PostgreSQL transactions and Row Level Security to strictly enforce tenant isolation and prevent double bookings.
     \item \textbf{AI-Augmented Methodology:} Evaluated a multi-model development pipeline utilizing MCP to assist in system implementation.
-    \item \textbf{Tier 3 UX Optimizations:} Built a lightweight SSR frontend tailored specifically for mid-range Android devices on variable 4G connections.
+    \item \textbf{Tier 3 UX Optimizations:} Developed a lightweight SSR frontend tailored specifically for mid-range Android devices on variable 4G connections.
 \end{itemize}
 
 % --- CHAPTER 2 ---
 \chapter{Problem Statement}
 
-\section{Current State and Limitations}
-The current state of inter-district transport coordination in Barak Valley relies entirely on analogue communication systems. Fleet bookings are executed predominantly through telephone calls and physical ledger entries. Operators manage their daily inventory using notebooks at physical transit hubs. Passengers must rely on personal connections or physical visits to ascertain vehicle availability, departure times, and pricing. 
+\section{Current Situation}
+The current state of inter-district transport coordination in Barak Valley relies entirely on analogue communication systems. Fleet bookings are executed predominantly through telephone calls and physical ledger entries. Operators manage their daily inventory using notebooks at physical transit hubs. Passengers rely on personal connections or physical visits to ascertain vehicle availability, departure times, and pricing. 
 
-For fleet operators, these manual processes manifest as severe operational pain points. The most critical issue is the high frequency of double bookings due to human error in ledger management. Operators also suffer from idle fleet capacity without a centralised digital broadcasting mechanism. The lack of a unified dashboard means operators have minimal real-time visibility into their projected revenue or fleet utilisation metrics.
+\section{Operator Problems}
+For fleet operators, these manual processes manifest as severe operational pain points. The most critical issue is the high frequency of double bookings due to human error in ledger management. Operators also suffer from idle fleet capacity without a centralised digital broadcasting mechanism. The lack of a unified dashboard limits real-time visibility into projected revenue or fleet utilisation metrics.
 
-Conversely, customers face significant friction when interacting with this analogue system. The primary pain point is the complete absence of a digital discovery mechanism. Once a booking is verbally agreed upon, there is no formal digital confirmation, leading to anxiety and uncertainty. They lack any mechanism for tracking the status of their booking or securely managing their travel itineraries.
+\section{Customer Problems}
+Conversely, customers face significant friction when interacting with this analogue system. The primary pain point is the complete absence of a digital discovery mechanism. Once a booking is verbally agreed upon, there is no formal digital confirmation, leading to uncertainty. Customers lack any mechanism for tracking the status of their booking or securely managing their travel itineraries.
 
-\section{Why Existing Solutions Fail}
-While existing generic booking platforms and large-scale aggregators dominate metropolitan markets, they categorically fail to fit the context of Barak Valley. Enterprise-level solutions impose prohibitive subscription costs and require operators to possess advanced digital literacy. National aggregators extract significant commission percentages, which operates counter to the low-margin reality of local fleet owners. These platforms also attempt to force users into proprietary in-app messaging systems, ignoring that WhatsApp is the universally accepted communication layer in this demographic.
+\section{Limitations of Existing Systems}
+While generic booking platforms and large-scale aggregators exist in metropolitan markets, they fail to fit the context of Barak Valley. Enterprise solutions impose prohibitive subscription costs and require operators to possess advanced digital literacy. National aggregators extract significant commission percentages, counter to the low-margin reality of local fleet owners. Furthermore, these platforms attempt to force users into proprietary in-app messaging systems, ignoring that WhatsApp is the accepted communication standard in this demographic.
 
 \section{Formal Problem Statement}
-The inter-district road transport sector in Barak Valley suffers from critical operational inefficiencies due to a reliance on fragmented, analogue booking methods, leading to high rates of double bookings, unutilised fleet capacity, and customer friction in discovering transit options. There is a requirement for an ultra-localised digital fleet management platform that digitises discovery and guarantees atomic seat allocation while aligning with the region's existing digital literacy and reliance on WhatsApp communication.
+The inter-district road transport sector in Barak Valley suffers from critical operational inefficiencies due to a reliance on fragmented, analogue booking methods. This leads to high rates of double bookings, unutilised fleet capacity, and customer friction in discovering transit options. There is a requirement for an ultra-localised digital fleet management platform that digitises discovery and guarantees atomic seat allocation while aligning with the region's existing digital literacy and reliance on WhatsApp communication.
 
 % --- CHAPTER 3 ---
 \chapter{Literature Survey}
@@ -348,12 +363,12 @@ The digital transformation of transportation networks across India has historica
     \begin{tabularx}{\textwidth}{l X}
     \toprule
     \rowcolor{brandteal}
-    \textcolor{white}{\textbf{Existing Work}} & \textcolor{white}{\textbf{Limitation in Target Context}} \\
+    \multicolumn{1}{c}{\textcolor{white}{\textbf{Existing Work}}} & \multicolumn{1}{c}{\textcolor{white}{\textbf{Limitation in Target Context}}} \\
     \midrule
-    \rowcolor{lightgray}
+    \rowcolor{lightgray!30}
     MaaS Platforms & Urban-focused; neglect intra-district road transport in Tier 3 regions. \\
     Fleet ERP Systems & High capital expenditure; overly complex for small independent operators. \\
-    \rowcolor{lightgray}
+    \rowcolor{lightgray!30}
     Consumer Aggregators & High commission-based models reduce already narrow profit margins. \\
     AI Development Models & Theoretical discussions; few practical implementations in full-stack regional apps. \\
     \bottomrule
@@ -372,32 +387,22 @@ Pather Saathi is developed as a two-sided, web-based platform built on a modern,
 \begin{figure}[htbp]
     \centering
     \begin{tikzpicture}[
-        node distance=2cm and 2.5cm,
-        box/.style={rectangle, draw=brandteal, thick, fill=white, text width=3.5cm, align=center, rounded corners=3pt, minimum height=1.5cm, font=\small\sffamily},
-        arrow/.style={-{Stealth[scale=1.2]}, thick, draw=darkgray},
-        bg/.style={rectangle, rounded corners, fill=lightgray!30, inner sep=0.5cm}
+        box/.style={rectangle, draw=ieeedark, thick, fill=pastelblue, text width=3.5cm, align=center, rounded corners=4pt, minimum height=1.2cm, font=\small\sffamily},
+        arrow/.style={-{Stealth[scale=1.2]}, thick, draw=ieeedark}
     ]
-    
         % Nodes
-        \node[box] (customer) {Customer \\ (Mobile Device)};
-        \node[box, right=of customer, yshift=1cm] (pwa) {Pather Saathi PWA \\ (Vercel Edge)};
-        \node[box, right=of pwa, yshift=-1cm] (supabase) {Supabase \\ (Auth \& Database)};
-        \node[box, below=of pwa, yshift=1cm] (operator) {Operator Dashboard \\ (Vercel Edge)};
-        \node[box, left=of operator, yshift=-1cm] (whatsapp) {WhatsApp \\ (Deep-link)};
-
-        % Grouping
-        \begin{scope}[on background layer]
-            \node[bg, fit=(pwa)(operator)] (frontend) {};
-            \node[above left, font=\sffamily\bfseries\color{brandteal}, yshift=-0.5cm] at (frontend.north east) {Next.js Frontend};
-        \end{scope}
+        \node[box, fill=pastelgreen] (customer) at (0, 3) {Customer \\ (Mobile Device)};
+        \node[box, fill=pastelblue] (pwa) at (0, 0) {PWA Frontend \\ (Vercel Edge)};
+        \node[box, fill=pastelpurple] (supabase) at (6, 0) {Supabase \\ (Auth \& Database)};
+        \node[box, fill=pastelgreen] (whatsapp) at (0, -3) {WhatsApp \\ (Deep-link)};
+        \node[box, fill=pastelblue] (operator) at (6, -3) {Operator Dashboard \\ (Vercel Edge)};
 
         % Connections
-        \draw[arrow] (customer) -- node[above, sloped, font=\scriptsize] {Search \& Book} (pwa);
-        \draw[arrow] (pwa) -- node[above, sloped, font=\scriptsize] {RPC \& Server Actions} (supabase);
-        \draw[arrow] (supabase) -- node[below, sloped, font=\scriptsize] {Realtime Sync} (operator);
-        \draw[arrow] (operator) -- node[above, sloped, font=\scriptsize] {Approve/Reject} (supabase);
+        \draw[arrow] (customer) -- node[left, font=\scriptsize] {Search \& Book} (pwa);
+        \draw[arrow] (pwa) -- node[above, font=\scriptsize] {RPC \& Actions} (supabase);
         \draw[arrow] (pwa) -- node[left, font=\scriptsize] {Generate \texttt{wa.me} Link} (whatsapp);
-        \draw[arrow] (customer) -- node[left, font=\scriptsize] {Send Msg} (whatsapp);
+        \draw[arrow] (operator) -- node[right, font=\scriptsize] {Approve/Reject \& Sync} (supabase);
+        \draw[arrow] (operator) -- node[above, font=\scriptsize] {Contact Customer} (whatsapp);
     \end{tikzpicture}
     \caption{System Overview --- Pather Saathi}
 \end{figure}
@@ -408,12 +413,31 @@ The customer portal is engineered as a mobile-first Progressive Web App (PWA). I
 The operator dashboard provides fleet owners with a secure environment to manage their inventory. Features include a real-time booking queue where operators can accept or reject incoming requests. A comprehensive route and schedule management module allows operators to adjust their offerings, configure seat capacities, and set pricing.
 
 \section{Technology Stack}
-\begin{itemize}[leftmargin=*]
-    \item \textbf{Frontend (Next.js \& React):} Selected for robust Server-Side Rendering (SSR) capabilities, ensuring fast page loads even on variable networks \cite{nextjs_docs, react_docs}.
-    \item \textbf{Backend (Supabase \& PostgreSQL):} Supabase provides a managed PostgreSQL database. Its built-in Row Level Security (RLS) features strictly enforce tenant isolation \cite{supabase_docs, postgres_docs}.
-    \item \textbf{Deployment (Vercel):} Provides edge network deployment for Next.js Server Actions with low infrastructure maintenance \cite{vercel_docs}.
-    \item \textbf{Styling (Tailwind CSS):} Enables rapid, accessible, and highly consistent UI development \cite{tailwind_docs}.
-\end{itemize}
+The platform is built upon a modern, scalable technology stack chosen for velocity, performance, and serverless compatibility.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Technology Stack Components}
+    \renewcommand{\arraystretch}{1.5}
+    \begin{tabularx}{\textwidth}{l X}
+    \toprule
+    \rowcolor{brandteal}
+    \multicolumn{1}{c}{\textcolor{white}{\textbf{Component}}} & \multicolumn{1}{c}{\textcolor{white}{\textbf{Technology}}} \\
+    \midrule
+    \rowcolor{lightgray!30}
+    Frontend & Next.js \\
+    Backend & Supabase \\
+    \rowcolor{lightgray!30}
+    Database & PostgreSQL \\
+    Deployment & Vercel \\
+    \rowcolor{lightgray!30}
+    Domain & \texttt{pathersaathi.in} \\
+    Email Service & Zoho Mail \\
+    \rowcolor{lightgray!30}
+    SEO & Google Search Console \\
+    \bottomrule
+    \end{tabularx}
+\end{table}
 
 \section{WhatsApp Integration}
 A critical element of the proposed solution is its WhatsApp-first communication strategy. Pather Saathi utilises dynamic deep-linking via the \texttt{wa.me} protocol. When a customer initiates a booking, the system generates a secure reference ID and constructs a pre-filled WhatsApp message. This leverages existing digital habits while maintaining a verifiable digital paper trail within the platform.
@@ -421,20 +445,29 @@ A critical element of the proposed solution is its WhatsApp-first communication 
 % --- CHAPTER 5 ---
 \chapter{Methodology and Working Process}
 
-\section{Agile Development Workflow}
-The project was executed using an iterative Agile methodology. This approach allowed for continuous integration and rapid pivoting based on architectural discoveries. The lifecycle was divided into focused phases: Requirement Analysis, UI/UX Prototyping, Backend Configuration, Core Booking Logic Implementation, Operator Dashboard Development, Security Auditing, and Production Deployment. This sequential yet flexible structure ensured that security and usability were continuously evaluated at each stage of development.
+\section{Requirement Analysis}
+The project commenced with an analysis of the operational constraints in Barak Valley. This phase identified the critical need for a low-friction booking system that required minimal digital literacy, leading to the selection of WhatsApp as the primary communication medium.
 
-\section{AI-Assisted Development}
-A defining characteristic of this project was the integration of an AI-augmented development pipeline. The human engineering team acted as technical orchestrators, leveraging the Model Context Protocol (MCP) to allow AI agents direct, sandboxed access to the project filesystem. AI assistants were utilized for primary implementation tasks, complex refactoring, migration generation, and inline code assistance. The human team maintained oversight of architectural design, security audits, and final code reviews, ensuring the output adhered to rigorous academic and security standards.
+\section{UI/UX Design}
+A mobile-first design strategy was adopted, acknowledging that the primary user base accesses the internet via mid-range Android devices. The interface was constructed using Shadcn UI components to ensure accessible touch targets and high-contrast visibility under direct sunlight.
 
-\section{Testing Methodology}
-The testing methodology consisted of three distinct tiers. First, strict build verification was employed, requiring zero TypeScript or ESLint errors to ensure structural integrity. Second, adversarial Row Level Security (RLS) testing was conducted to verify that database isolation policies held under duress. Finally, manual User Acceptance Testing (UAT) was executed on physical Android devices to validate the WhatsApp deep-linking functionality and the responsiveness of the mobile layouts across various network conditions.
+\section{Database Design}
+The data layer was modeled using PostgreSQL. The schema was normalized to support multi-tenancy, ensuring that fleet operators only have access to their specific vehicles and routes. Row Level Security (RLS) policies were designed as the primary defense mechanism against unauthorized data access.
+
+\section{Implementation}
+The system was developed utilizing a modern Next.js framework. To accelerate implementation, the engineering team leveraged AI-assisted code generation via the Model Context Protocol (MCP). While AI agents assisted with boilerplate and repetitive logic, the human team maintained strict oversight over architectural decisions and security implementations.
+
+\section{Testing}
+Testing encompassed strict build verification, adversarial Row Level Security (RLS) audits to verify database isolation, and manual User Acceptance Testing (UAT) on physical devices to validate WhatsApp deep-linking functionality across varying network conditions.
+
+\section{Deployment}
+The application was deployed on Vercel's serverless edge infrastructure to ensure high availability and minimal latency, with the PostgreSQL database hosted on Supabase.
 
 % --- CHAPTER 6 ---
 \chapter{Software and Hardware Requirements}
 
 \section{System Requirements}
-The project relies on a modern software stack selected for developer velocity and serverless compatibility. The complete hardware and software requirements for the development and deployment environments are consolidated in Table \ref{tab:requirements}.
+The project relies on a modern software stack selected for developer velocity and serverless compatibility. The core technologies include Next.js \cite{nextjs_docs} and React \cite{react_docs} for the frontend, styled with Tailwind CSS \cite{tailwind_docs}. The backend leverages Supabase \cite{supabase_docs} as a PostgreSQL \cite{postgres_docs} provider, with deployment handled by Vercel \cite{vercel_docs}. The complete hardware and software requirements for the development and deployment environments are consolidated in Table \ref{tab:requirements}.
 
 \begin{table}[htbp]
     \centering
@@ -444,21 +477,22 @@ The project relies on a modern software stack selected for developer velocity an
     \begin{tabularx}{\textwidth}{l l X}
     \toprule
     \rowcolor{brandteal}
-    \textcolor{white}{\textbf{Category}} & \textcolor{white}{\textbf{Component}} & \textcolor{white}{\textbf{Details \& Purpose}} \\
+    \textcolor{white}{\textbf{Category}} & \textcolor{white}{\textbf{Component}} & \multicolumn{1}{c}{\textcolor{white}{\textbf{Details \& Purpose}}} \\
     \midrule
-    \rowcolor{lightgray}
-    \multirow{3}{*}{Development} & Hardware & Intel i5 / AMD equivalent, 16GB RAM, SSD storage. \\
-    & Runtime / Language & Node.js (v20.x LTS), TypeScript (5.x). \\
-    & Tools & Supabase CLI (Local PostgreSQL), Git (2.x). \\
-    \midrule
-    \multirow{4}{*}{Application Stack} & Frontend Framework & Next.js (14.2), React (18.2). \\
-    & Styling & Tailwind CSS (3.4), Lucide React. \\
-    & Authentication & @supabase/ssr (Session management). \\
-    & Cloud Services & Vercel (Edge Compute), Supabase (PostgreSQL), Upstash (Redis). \\
-    \midrule
-    \rowcolor{lightgray}
-    End-User Context & Hardware & Mid-range Android device (2GB+ RAM). \\
-    & Software & Modern mobile browser, WhatsApp installed. \\
+    \rowcolor{lightgray!30}
+    Development & Hardware & Intel i5 / AMD equivalent, 16GB RAM, SSD storage. \\
+    Development & Runtime & Node.js (v20.x LTS), TypeScript (5.x). \\
+    \rowcolor{lightgray!30}
+    Development & Tools & Supabase CLI (Local PostgreSQL), Git (2.x). \\
+    App Stack & Frontend & Next.js (14.2), React (18.2). \\
+    \rowcolor{lightgray!30}
+    App Stack & Styling & Tailwind CSS (3.4), Lucide React. \\
+    App Stack & Auth & @supabase/ssr (Session management). \\
+    \rowcolor{lightgray!30}
+    App Stack & Cloud Services & Vercel (Edge Compute), Supabase (PostgreSQL), Upstash (Redis). \\
+    End-User & Hardware & Mid-range Android device (2GB+ RAM). \\
+    \rowcolor{lightgray!30}
+    End-User & Software & Modern mobile browser, WhatsApp installed. \\
     \bottomrule
     \end{tabularx}
 \end{table}
@@ -466,22 +500,46 @@ The project relies on a modern software stack selected for developer velocity an
 % --- CHAPTER 7 ---
 \chapter{System Design and Architecture}
 
+\section{System Modules}
+The architecture of Pather Saathi is segmented into interconnected modules to ensure maintainability and separation of concerns.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Core System Modules}
+    \renewcommand{\arraystretch}{1.5}
+    \begin{tabularx}{\textwidth}{l X}
+    \toprule
+    \rowcolor{brandteal}
+    \multicolumn{1}{c}{\textcolor{white}{\textbf{Module}}} & \multicolumn{1}{c}{\textcolor{white}{\textbf{Functionality}}} \\
+    \midrule
+    \rowcolor{lightgray!30}
+    Customer Interface & PWA discovery portal, dynamic route searching, seat booking requests. \\
+    Operator Dashboard & Secure management environment, real-time booking queue, fleet administration. \\
+    \rowcolor{lightgray!30}
+    Authentication Layer & JWT-based session management, Next.js Edge Middleware route protection. \\
+    Database \& Security & PostgreSQL multi-tenancy, Row Level Security (RLS) isolation, atomic transactions. \\
+    \rowcolor{lightgray!30}
+    Communication API & Dynamic WhatsApp \texttt{wa.me} URI generation, automated Resend email triggers. \\
+    \bottomrule
+    \end{tabularx}
+\end{table}
+
 \section{Deployment Architecture}
-The platform utilizes a globally distributed, serverless deployment topology to ensure high availability and minimal latency for users.
+The Pather Saathi platform is deployed under the custom domain \textbf{pathersaathi.in}, providing a production-ready web interface for end users. The platform utilizes a globally distributed, serverless deployment topology to ensure high availability and minimal latency for users.
 
 \begin{figure}[htbp]
     \centering
     \begin{tikzpicture}[
         node distance=1.5cm and 2cm,
-        actor/.style={circle, draw=brandteal, fill=brandteal!10, thick, minimum size=1.5cm, align=center, font=\sffamily\footnotesize\bfseries},
-        service/.style={rectangle, draw=darkgray, fill=white, thick, text width=2.5cm, align=center, rounded corners=3pt, minimum height=1.2cm, font=\sffamily\small},
-        arrow/.style={-{Stealth[scale=1.2]}, thick, draw=brandteal}
+        actor/.style={circle, draw=ieeedark, fill=pastelblue, thick, minimum size=1.5cm, align=center, font=\sffamily\footnotesize\bfseries},
+        service/.style={rectangle, draw=ieeedark, fill=pastelgray, thick, text width=2.5cm, align=center, rounded corners=4pt, minimum height=1.2cm, font=\sffamily\small},
+        arrow/.style={-{Stealth[scale=1.2]}, thick, draw=ieeedark}
     ]
         \node[actor] (user) {User};
-        \node[service, right=of user] (vercel) {Vercel\\(Edge Network)};
-        \node[service, right=of vercel] (supabase) {Supabase\\(Data \& Auth)};
-        \node[service, below=of vercel] (upstash) {Upstash\\(Redis Cache)};
-        \node[service, below=of supabase] (resend) {Resend\\(Email API)};
+        \node[service, fill=pastelgreen, right=of user] (vercel) {Vercel\\(Edge Network)};
+        \node[service, fill=pastelpurple, right=of vercel] (supabase) {Supabase\\(Data \& Auth)};
+        \node[service, fill=pastelyellow, below=of vercel] (upstash) {Upstash\\(Redis Cache)};
+        \node[service, fill=pastelred, below=of supabase] (resend) {Resend\\(Email API)};
 
         \draw[arrow] (user) -- node[above, font=\scriptsize] {HTTPS} (vercel);
         \draw[arrow] (vercel) -- node[above, font=\scriptsize] {PostgREST} (supabase);
@@ -498,14 +556,14 @@ The platform utilizes a globally distributed, serverless deployment topology to 
     \centering
     \begin{tikzpicture}[
         node distance=0.8cm and 1.5cm,
-        astep/.style={rectangle, draw=brandteal, fill=white, thick, text width=2.2cm, align=center, rounded corners=3pt, minimum height=1.2cm, font=\sffamily\scriptsize},
-        arrow/.style={-{Stealth}, thick, draw=darkgray}
+        astep/.style={rectangle, draw=ieeedark, fill=pastelblue, thick, text width=2.2cm, align=center, rounded corners=4pt, minimum height=1.2cm, font=\sffamily\scriptsize},
+        arrow/.style={-{Stealth}, thick, draw=ieeedark}
     ]
-        \node[astep] (user) {User};
+        \node[astep, fill=pastelgreen] (user) {User};
         \node[astep, right=of user] (login) {Login Form};
-        \node[astep, right=of login] (supabase) {Supabase Auth};
-        \node[astep, right=of supabase] (jwt) {Issue JWT};
-        \node[astep, below=of jwt] (middleware) {Edge Middleware};
+        \node[astep, fill=pastelpurple, right=of login] (supabase) {Supabase Auth};
+        \node[astep, fill=pastelpurple, right=of supabase] (jwt) {Issue JWT};
+        \node[astep, fill=pastelyellow, below=of jwt] (middleware) {Edge Middleware};
         \node[astep, below=of login] (routes) {Protected Routes};
 
         \draw[arrow] (user) -- (login);
@@ -523,16 +581,16 @@ The platform utilizes a globally distributed, serverless deployment topology to 
     \centering
     \begin{tikzpicture}[
         node distance=1cm and 1.5cm,
-        bstep/.style={rectangle, draw=brandteal, fill=white, thick, text width=2.2cm, align=center, rounded corners=3pt, minimum height=1.2cm, font=\sffamily\scriptsize},
-        db/.style={cylinder, draw=darkgray, fill=white, thick, aspect=0.25, minimum height=1.5cm, minimum width=2cm, shape border rotate=90, text width=1.5cm, align=center, font=\sffamily\scriptsize},
-        arrow/.style={-{Stealth}, thick, draw=darkgray}
+        bstep/.style={rectangle, draw=ieeedark, fill=pastelblue, thick, text width=2.2cm, align=center, rounded corners=4pt, minimum height=1.2cm, font=\sffamily\scriptsize},
+        db/.style={cylinder, draw=ieeedark, fill=pastelpurple, thick, aspect=0.25, minimum height=1.5cm, minimum width=2cm, shape border rotate=90, text width=1.5cm, align=center, font=\sffamily\scriptsize},
+        arrow/.style={-{Stealth}, thick, draw=ieeedark}
     ]
-        \node[bstep] (cust) {Customer};
+        \node[bstep, fill=pastelgreen] (cust) {Customer};
         \node[bstep, right=of cust] (req) {Booking Request};
-        \node[bstep, right=of req] (val) {Validation\\(RLS)};
+        \node[bstep, fill=pastelyellow, right=of req] (val) {Validation\\(RLS)};
         \node[db, right=of val] (db) {PostgreSQL};
-        \node[bstep, below=of db] (op) {Operator Approval};
-        \node[bstep, below=of cust] (conf) {Confirmation\\(WhatsApp)};
+        \node[bstep, fill=pastelgreen, below=of db] (op) {Operator Approval};
+        \node[bstep, fill=pastelred, below=of cust] (conf) {Confirmation\\(WhatsApp)};
 
         \draw[arrow] (cust) -- (req);
         \draw[arrow] (req) -- (val);
@@ -550,32 +608,35 @@ The database schema is highly normalised to ensure data integrity in a multi-ten
 \begin{figure}[htbp]
     \centering
     \begin{tikzpicture}[
-        node distance=2cm and 2.5cm,
-        entity/.style={rectangle, draw=brandteal, fill=white, thick, text width=2.5cm, align=center, rounded corners=3pt, minimum height=1cm, font=\sffamily\bfseries\small},
-        relation/.style={-{Stealth}, thick, draw=darkgray}
+        node distance=1.5cm and 2cm,
+        entity/.style={rectangle, draw=ieeedark, fill=pastelblue, thick, text width=3.0cm, align=center, rounded corners=4pt, minimum height=1cm, font=\sffamily\bfseries\small},
+        relation/.style={-{Stealth}, thick, draw=ieeedark}
     ]
         % Nodes
-        \node[entity] (users) at (0, 0) {users};
-        \node[entity] (vehicles) at (-4, 0) {vehicles};
-        \node[entity] (bookings) at (4, 0) {bookings};
-        \node[entity] (schedules) at (0, 2.5) {schedules};
-        \node[entity] (booking_vehicles) at (0, -2.5) {booking\_vehicles};
-        \node[entity] (routes) at (0, 5) {routes};
-        \node[entity] (locations) at (0, 7.5) {locations};
+        \node[entity, fill=pastelblue] (locations) at (0, 6) {locations};
+        \node[entity, fill=pastelorange] (routes) at (0, 4) {routes};
+        \node[entity, fill=pastelgray] (schedules) at (0, 2) {schedules};
+        
+        \node[entity, fill=pastelpurple] (users) at (0, 0) {users};
+        \node[entity, fill=pastelgreen] (vehicles) at (-4.5, 0) {vehicles};
+        \node[entity, fill=pastelyellow] (bookings) at (4.5, 0) {bookings};
+        
+        \node[entity, fill=pastelred] (booking_vehicles) at (0, -2) {booking\_vehicles};
 
         % Edges
-        \draw[relation] (routes.north west) to[bend left=20] node[left, font=\scriptsize] {origin\_id (N:1)} (locations.south west);
-        \draw[relation] (routes.north east) to[bend right=20] node[right, font=\scriptsize] {destination\_id (N:1)} (locations.south east);
+        \draw[relation] (routes.north west) to[bend left=15] node[left, font=\scriptsize] {origin\_id (N:1)} (locations.south west);
+        \draw[relation] (routes.north east) to[bend right=15] node[right, font=\scriptsize] {destination\_id (N:1)} (locations.south east);
         
         \draw[relation] (schedules) -- node[right, font=\scriptsize] {route\_id (N:1)} (routes);
-        \draw[relation] (bookings) -- node[above right, font=\scriptsize] {schedule\_id (N:1)} (schedules);
-        \draw[relation] (vehicles) -- node[above, font=\scriptsize] {owner\_id (N:1)} (users);
         
-        \draw[relation] (schedules) -- node[above left, font=\scriptsize] {vehicle\_id (N:1)} (vehicles);
+        \draw[relation] (schedules.south west) -- node[above left, font=\scriptsize] {vehicle\_id (N:1)} (vehicles.north east);
+        \draw[relation] (bookings.north west) -- node[above right, font=\scriptsize] {schedule\_id (N:1)} (schedules.south east);
+        
+        \draw[relation] (vehicles) -- node[above, font=\scriptsize] {owner\_id (N:1)} (users);
         \draw[relation] (bookings) -- node[above, font=\scriptsize] {customer\_id (N:1)} (users);
         
-        \draw[relation] (booking_vehicles) -- node[below right, font=\scriptsize] {booking\_id (N:1)} (bookings);
-        \draw[relation] (booking_vehicles) -- node[below left, font=\scriptsize] {vehicle\_id (N:1)} (vehicles);
+        \draw[relation] (booking_vehicles.north west) -- node[below left, font=\scriptsize] {vehicle\_id (N:1)} (vehicles.south east);
+        \draw[relation] (booking_vehicles.north east) -- node[below right, font=\scriptsize] {booking\_id (N:1)} (bookings.south west);
 
     \end{tikzpicture}
     \caption{Entity Relationship Diagram (ERD) with Cardinalities}
@@ -589,12 +650,12 @@ The security architecture operates on a defense-in-depth model. The primary defe
     \centering
     \begin{tikzpicture}[
         node distance=2cm,
-        zone/.style={rectangle, draw=brandteal, fill=brandteal!5, thick, text width=3.5cm, align=center, rounded corners=3pt, minimum height=1.5cm, font=\sffamily\small},
-        arrow/.style={-{Stealth}, thick, draw=darkgray}
+        zone/.style={rectangle, draw=ieeedark, fill=pastelgray, thick, text width=3.5cm, align=center, rounded corners=4pt, minimum height=1.5cm, font=\sffamily\small},
+        arrow/.style={-{Stealth}, thick, draw=ieeedark}
     ]
-        \node[zone] (public) {Public Zone\\(Browser Client)};
-        \node[zone, right=of public] (dmz) {DMZ / Edge\\(Vercel Middleware)};
-        \node[zone, right=of dmz] (secure) {Secure Zone\\(Supabase RLS)};
+        \node[zone, fill=pastelgreen] (public) {Public Zone\\(Browser Client)};
+        \node[zone, fill=pastelyellow, right=of public] (dmz) {DMZ / Edge\\(Vercel Middleware)};
+        \node[zone, fill=pastelred, right=of dmz] (secure) {Secure Zone\\(Supabase RLS)};
         
         \draw[arrow] (public) -- node[above, font=\scriptsize] {Untrusted} (dmz);
         \draw[arrow] (dmz) -- node[above, font=\scriptsize] {Verified JWT} (secure);
@@ -630,20 +691,45 @@ The Operator Dashboard acts as a command centre. The interface is data-dense but
 \section{Security and Validation}
 The culmination of experimental testing phases confirmed the operational readiness of the platform. Adversarial security audits proved the RLS layer to be strictly resilient against privilege escalation and tenant data leakage. Distributed load testing validated the edge-based rate limiting architecture, ensuring protection against automated abuse. Finally, the end-to-end booking flow and build integrity metrics confirmed that the core business logic performs reliably under real-world constraints.
 
+\section{Production Deployment Validation}
+To ensure the project is fully production-ready, practical DevOps and deployment methodologies were executed.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Deployment Validation Status}
+    \renewcommand{\arraystretch}{1.5}
+    \begin{tabularx}{\textwidth}{X l}
+    \toprule
+    \rowcolor{brandteal}
+    \multicolumn{1}{c}{\textcolor{white}{\textbf{Feature}}} & \multicolumn{1}{c}{\textcolor{white}{\textbf{Status}}} \\
+    \midrule
+    \rowcolor{lightgray!30}
+    Custom Domain Deployment (\texttt{pathersaathi.in}) & \checkmark Completed \\
+    HTTPS Enabled & \checkmark Completed \\
+    \rowcolor{lightgray!30}
+    Search Engine Indexing & \checkmark Completed \\
+    Professional Email Setup (Zoho Mail) & \checkmark Completed \\
+    \rowcolor{lightgray!30}
+    Mobile Responsive Testing & \checkmark Completed \\
+    Serverless Deployment (Vercel) & \checkmark Completed \\
+    \bottomrule
+    \end{tabularx}
+\end{table}
+
 \section{End-to-End Booking Flow Validation}
 \begin{table}[htbp]
     \centering
     \caption{E2E Flow Validation}
     \renewcommand{\arraystretch}{1.5}
-    \begin{tabularx}{\textwidth}{l X X}
+    \begin{tabularx}{\textwidth}{c l X}
     \toprule
     \rowcolor{brandteal}
-    \textcolor{white}{\textbf{Step}} & \textcolor{white}{\textbf{Action}} & \textcolor{white}{\textbf{Result}} \\
+    \multicolumn{1}{c}{\textcolor{white}{\textbf{Step}}} & \multicolumn{1}{c}{\textcolor{white}{\textbf{Action}}} & \multicolumn{1}{c}{\textcolor{white}{\textbf{Result}}} \\
     \midrule
-    \rowcolor{lightgray}
+    \rowcolor{lightgray!30}
     1 & Customer initiates booking. & Transaction atomic lock acquired. \\
     2 & Database validates availability. & Seats decremented, status set to pending. \\
-    \rowcolor{lightgray}
+    \rowcolor{lightgray!30}
     3 & WhatsApp deep-link triggered. & Native app opens with pre-filled message. \\
     4 & Operator approves via dashboard. & Status updated to approved, confirmation visible. \\
     \bottomrule
@@ -656,25 +742,37 @@ The Pather Saathi platform has successfully been evaluated through testing, buil
 \end{keyfinding}
 
 % --- CHAPTER 10 ---
-\begingroup
-\let\clearpage\relax
-\let\cleardoublepage\relax
-\vspace{1cm}
 \chapter{Challenges Faced}
 
-\begin{itemize}[leftmargin=*]
-    \item \textbf{RLS Infinite Recursion Bug:} The policy evaluated recursively when joining the \texttt{bookings} table with the \texttt{users} table. This was resolved using \texttt{SECURITY DEFINER} functions to bypass the policy evaluation loop.
-    \item \textbf{Serverless Rate Limiting:} In-memory rate limiting failed on Vercel due to isolated, ephemeral serverless instances. This necessitated architecting a distributed rate-limiting solution using Upstash Redis.
-    \item \textbf{Performance on Low-End Devices:} Initial field testing exhibited sluggish performance due to large client-side JavaScript bundles. The team resolved this by aggressively refactoring the component tree to utilise React Server Components (RSC).
-    \item \textbf{AI-Generated Code Quality Control:} While AI improved velocity, early iterations suffered from subtle logical flaws, requiring secondary adversarial review passes.
-    \item \textbf{Project Scope Management:} Given the ease of feature implementation, the team faced intense pressure regarding scope creep, requiring strict prioritisation to deliver a polished MVP.
-\end{itemize}
+\begin{challengebox}[Infinite Recursion in Row Level Security (RLS) policies]
+\textbf{Solution:} The policy evaluated recursively when joining the \texttt{bookings} table with the \texttt{users} table. This was resolved using \texttt{SECURITY DEFINER} PostgreSQL functions to safely bypass the policy evaluation loop.
+
+\vspace{0.5em}\noindent\textbf{Lesson Learned:} Direct table joins within RLS policies must be avoided in favour of dedicated security functions.
+\end{challengebox}
+
+\begin{challengebox}[Ephemeral State in Serverless Rate Limiting]
+\textbf{Solution:} In-memory rate limiting failed on Vercel due to isolated, ephemeral serverless instances. This necessitated architecting a distributed rate-limiting solution using Upstash Redis.
+
+\vspace{0.5em}\noindent\textbf{Lesson Learned:} Global state cannot be maintained in serverless environments without an external caching layer.
+\end{challengebox}
+
+\begin{challengebox}[Performance on Low-End Devices]
+\textbf{Solution:} Initial field testing exhibited sluggish performance due to large client-side JavaScript bundles. The team resolved this by aggressively refactoring the component tree to utilise React Server Components (RSC).
+
+\vspace{0.5em}\noindent\textbf{Lesson Learned:} Mobile-first design must prioritize minimizing client-side hydration payloads for Tier-3 network constraints.
+\end{challengebox}
+
+\begin{challengebox}[AI-Generated Code Quality Control]
+\textbf{Solution:} While AI improved velocity, early iterations suffered from subtle logical flaws, requiring secondary adversarial review passes.
+
+\vspace{0.5em}\noindent\textbf{Lesson Learned:} AI agents are powerful execution engines but require human engineers to act as strict architectural validators.
+\end{challengebox}
 
 % --- CHAPTER 11 ---
 \chapter{Future Scope}
 
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Construction Vehicle Booking:} Expanding the platform to encompass heavy construction and logistics vehicle chartering.
+    \item \textbf{Real-Time GPS Tracking:} Integrating live vehicle geolocation to provide customers and operators with accurate arrival estimations.
     \item \textbf{Online Payment Integration:} Integrating a formal payment gateway (e.g., Razorpay) to mandate partial deposits and reduce customer no-shows.
     \item \textbf{Seat Selection Interface:} A visual interface allowing customers to select specific seat numbers during the booking flow.
     \item \textbf{Email and SMS Notifications:} Implementing fallback notification systems for critical booking confirmations.
@@ -685,17 +783,19 @@ The Pather Saathi platform has successfully been evaluated through testing, buil
 % --- CHAPTER 12 ---
 \chapter{Conclusion}
 
-Pather Saathi successfully demonstrates the impact that highly localised, context-aware digital platforms can have on underserved regional economies. By implementing a robust, cost-efficient fleet booking system tailored explicitly for the socioeconomic and technological realities of Barak Valley, this project effectively bridges a critical infrastructural gap. The decision to integrate directly with the universally adopted WhatsApp ecosystem proved to be a decisive factor in reducing user friction.
+The development and deployment of the Pather Saathi platform yield the following primary conclusions:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Digitisation of Informal Transit:} Hyper-localised platforms tailored to regional constraints are highly effective at formalising analogue transport networks, bridging critical infrastructural gaps in developing regions.
+    \item \textbf{Efficacy of WhatsApp Integration:} Leveraging existing digital habits, such as WhatsApp for communication, significantly reduces friction and accelerates user adoption in demographics with varying digital literacy.
+    \item \textbf{Serverless Multi-Tenancy:} A serverless architecture combined with strict PostgreSQL Row Level Security (RLS) provides a robust, scalable foundation for ensuring strict tenant isolation among independent fleet operators.
+    \item \textbf{Modern Development Workflow:} The integration of Model Context Protocol (MCP) tooling and AI agents dramatically increases development velocity, validating the future role of human engineers as strategic orchestrators.
+    \item \textbf{Mobile-First Performance:} Strict adherence to Server-Side Rendering (SSR) and minimal client-side bundles is an absolute prerequisite for applications targeting low-end Android devices on variable 4G networks.
+\end{enumerate}
 
-A paramount achievement of this project is the rigorous application of strict security within a serverless architecture. By treating the database as a zero-trust environment and enforcing Row Level Security (RLS) and Role-Based Access Control (RBAC), the platform guarantees data isolation between competing fleet operators. 
-
-Furthermore, this project makes a contribution to the evolving discourse on modern software engineering methodologies. It serves as a practical, empirical validation of AI-augmented development orchestration. By leveraging multi-model AI agents via the Model Context Protocol (MCP), the team operated with increased development velocity, standing as a testament to the future of software engineering where human engineers act as strategic orchestrators directing AI capabilities.
-
+\clearpage
 \renewcommand{\bibname}{References}
 \addcontentsline{toc}{chapter}{References}
 \nocite{*}
 \bibliographystyle{ieeetr}
 \bibliography{references}
-\endgroup
-
 \end{document}

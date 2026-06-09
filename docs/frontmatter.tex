@@ -1,0 +1,174 @@
+\begin{document}
+
+% --- TITLE PAGE ---
+\begin{titlepage}
+    \begin{tikzpicture}[remember picture, overlay]
+        % Background geometric shapes for a modern startup whitepaper feel
+        \fill[brandteal] (current page.north west) rectangle ($(current page.north east)+(0,-3)$);
+        \fill[lightgray] (current page.south west) rectangle ($(current page.south east)+(0,3)$);
+    \end{tikzpicture}
+
+    \vspace*{-2cm}
+    \begin{center}
+        \textcolor{white}{\LARGE \textbf{BARAK VALLEY ENGINEERING COLLEGE}}\\[0.2cm]
+        \textcolor{white}{\large Department of Computer Science and Engineering}\\[0.2cm]
+        \textcolor{white}{\large Assam Science and Technology University (ASTU)}
+    \end{center}
+
+    \vspace{3cm}
+
+    \begin{center}
+        \includegraphics[width=5cm]{logo.png}\\[1.5cm] % Keep logo size
+        {\Huge \textbf{\textcolor{brandteal}{PATHER SAATHI}}}\\[0.5cm]
+        {\LARGE \textbf{\textcolor{darkgray}{A Fleet Booking Platform for Barak Valley}}}\\[0.8cm]
+        
+        \begin{tcolorbox}[enhanced, colback=white, colframe=brandteal, arc=0mm, boxrule=1pt, width=0.8\textwidth, center]
+            \centering \textit{\Large AI-Augmented Development $\times$ Local Impact}
+        \end{tcolorbox}
+    \end{center}
+
+    \vfill
+    
+    \begin{center}
+        {\large A Project Report submitted in partial fulfillment of the requirements for the degree of}\\[0.3cm]
+        {\Large \textbf{Bachelor of Technology in Computer Science and Engineering}}\\[1.5cm]
+    \end{center}
+    
+    \begin{minipage}[t]{0.45\textwidth}
+        \begin{flushleft}
+            \textbf{\textcolor{brandteal}{Submitted by:}}\\
+            \vspace{0.2cm}
+            \textbf{Biswajyoti Nath}\\
+            \textbf{Dipjyoti Roy}\\
+            \textbf{Subinoy Nath}\\
+        \end{flushleft}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+        \begin{flushright}
+            \textbf{\textcolor{brandteal}{Under the guidance of:}}\\
+            \vspace{0.2cm}
+            \textbf{Khanjan Changmai Baruah}\\
+            \relax Assistant Professor\\
+        \end{flushright}
+    \end{minipage}
+    
+    \vspace{1.5cm}
+    \begin{center}
+        \textbf{\textcolor{darkgray}{Academic Year: 2025--2026}}
+    \end{center}
+    \vspace*{1cm}
+\end{titlepage}
+
+% --- CERTIFICATE PAGE ---
+\newpage
+\thispagestyle{empty}
+\begin{center}
+    {\Huge \textbf{CERTIFICATE}}\par
+    \vspace{1.5cm}
+\end{center}
+
+\begin{spacing}{1.5}
+This is to certify that the project entitled \textbf{"PATHER SAATHI --- A Fleet Booking Platform for Barak Valley"} submitted by \textbf{Biswajyoti Nath, Dipjyoti Roy, and Subinoy Nath} in partial fulfillment of the requirements for the award of the degree of Bachelor of Technology in Computer Science and Engineering from \textbf{Assam Science and Technology University (ASTU)} is a bonafide record of the work carried out by them under my supervision.
+\end{spacing}
+
+\vspace{3cm}
+
+\begin{flushright}
+    \textbf{Khanjan Changmai Baruah}\\
+    \relax Assistant Professor\\
+    \vspace{1.5cm}
+    \textbf{Dr. Kausthav Pratim Kalita}\\
+    Head of Department\\
+    \relax Assistant Professor
+\end{flushright}
+
+\vspace{1.5cm}
+\noindent Date: June 2026\\
+Place: Sribhumi
+
+% --- DECLARATION PAGE ---
+\newpage
+\thispagestyle{empty}
+\begin{center}
+    {\Huge \textbf{DECLARATION}}\par
+    \vspace{1.5cm}
+\end{center}
+
+\begin{spacing}{1.5}
+We hereby declare that the project report entitled \textbf{"PATHER SAATHI --- A Fleet Booking Platform for Barak Valley"} submitted in partial fulfillment of the requirements for the degree of Bachelor of Technology in Computer Science and Engineering at \textbf{BARAK VALLEY ENGINEERING COLLEGE}, affiliated with \textbf{Assam Science and Technology University (ASTU)}, is an authentic record of our own original work carried out under the guidance of \textbf{Khanjan Changmai Baruah}.
+
+We further declare that the work presented in this report has not been submitted previously, in part or in full, to any other university or institution for the award of any degree or diploma. All sources of information and references have been duly acknowledged.
+\end{spacing}
+
+\vspace{3cm}
+
+\begin{flushright}
+    \textbf{Biswajyoti Nath}\\
+    \vspace{1cm}
+    \textbf{Dipjyoti Roy}\\
+    \vspace{1cm}
+    \textbf{Subinoy Nath}
+\end{flushright}
+
+\vspace{1.5cm}
+\noindent Date: June 2026\\
+Place: Sribhumi
+
+% --- ACKNOWLEDGEMENT PAGE ---
+\newpage
+\thispagestyle{empty}
+\begin{center}
+    {\Huge \textbf{ACKNOWLEDGEMENT}}\par
+    \vspace{1.5cm}
+\end{center}
+
+\begin{spacing}{1.5}
+We would like to express our deepest gratitude to our project guide, \textbf{Mr. Khanjan Changmai Baruah}, whose expert guidance, continuous encouragement, and insightful feedback have been instrumental in the successful completion of this project. Their deep understanding of software engineering and commitment to rigorous methodology shaped the architectural direction of Pather Saathi.
+
+We extend our sincere thanks to our Head of Department, \textbf{Dr. Kausthav Pratim Kalita}, for providing us with the necessary resources, academic environment, and institutional support required to undertake this intensive research and development endeavour.
+
+We are profoundly grateful to \textbf{BARAK VALLEY ENGINEERING COLLEGE} for fostering an environment of innovation and technical excellence that enabled this work.
+
+A special note of acknowledgement goes to the local fleet operators in Barak Valley, specifically those operating the Silchar-Hailakandi route, who generously participated in our field surveys. Their firsthand insights into the daily operational challenges of manual fleet management provided the foundational requirements for this platform.
+
+Finally, we acknowledge the transformative impact of open-source tools and AI platforms in our development workflow. The integration of Next.js, Supabase, and Vercel, alongside the orchestration of AI models via the Model Context Protocol (MCP), fundamentally empowered us to deliver an enterprise-grade solution within the constraints of a student project.
+\end{spacing}
+
+% --- ABSTRACT PAGE ---
+\newpage
+\thispagestyle{empty}
+\begin{center}
+    {\Huge \textbf{ABSTRACT}}\par
+    \vspace{1.5cm}
+\end{center}
+
+\begin{spacing}{1.5}
+Inter-district transportation in Tier-3 Indian regions, specifically Barak Valley, Assam, relies heavily on analogue, highly fragmented coordination methods. Fleet operators manage bookings via physical ledgers and phone calls, leading to pervasive double bookings and unutilised capacity. Customers, conversely, lack any digital discovery mechanism to query available routes or secure seat reservations, resulting in significant friction. \textit{Pather Saathi} resolves this gap by providing an ultra-localised, cloud-native fleet booking platform tailored to the constraints of regional demographics. 
+
+The platform implements atomic booking allocation using robust PostgreSQL Row Level Security (RLS) policies and Role-Based Access Control (RBAC), completely eliminating concurrency issues. Unlike metropolitan solutions that force proprietary app adoption, Pather Saathi adopts a WhatsApp-first interaction model, leveraging deep-linking to route booking confirmations and operator communications through the universally adopted messenger layer.
+
+Methodologically, this project validates a multi-model AI-augmented development pipeline. Using the Model Context Protocol (MCP), AI agents were orchestrated to accelerate implementation while the human engineering team focused on architectural design and rigorous adversarial security audits. The final product was successfully deployed using a serverless architecture (Vercel and Supabase), achieving a highly scalable production environment with minimal monthly infrastructural cost. The result is a financially viable, enterprise-grade solution poised to democratise digital fleet management in underserved regions.
+
+\vspace{1cm}
+\textbf{Keywords:} Fleet Booking, Barak Valley, Serverless Architecture, Row Level Security, AI-Augmented Development, Model Context Protocol, WhatsApp Integration.
+\end{spacing}
+
+% --- TOC, LOF, LOT ---
+\newpage
+\pagenumbering{roman}
+\renewcommand{\cftchapfont}{\bfseries\color{darkgray}}
+\renewcommand{\cftchappagefont}{\bfseries\color{brandteal}}
+\renewcommand{\cftsecfont}{\normalfont\color{darkgray}}
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
+
+\tableofcontents
+\newpage
+\listoffigures
+\newpage
+\listoftables
+\newpage
+\pagenumbering{arabic}
+
+% --- CHAPTER 1 ---
+\chapter{Introduction and Objectives}

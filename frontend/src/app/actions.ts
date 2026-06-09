@@ -22,41 +22,14 @@ function generateBookingReference(): string {
 }
 
 // --- Ticket Booking ---
-export async function createTicketBooking(formData: FormData) {
+export async function searchSchedules(pickupId: string, destinationId: string, travelDate: string, seats: number) {
   const supabase = await createClient()
 
-  // 1. Authenticate user
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return { success: false, error: 'AUTH_REQUIRED' }
-  }
-
-  // 2. Rate limit check
-  const isAllowed = await checkRateLimit(user.id)
-  if (!isAllowed) {
-    return { success: false, error: 'Too many booking attempts. Please wait before trying again.' }
-  }
-
-  // 3. Extract and validate inputs
-  const pickupId = formData.get('pickup') as string
-  const destinationId = formData.get('destination') as string
-  const seatsStr = formData.get('seats') as string
-  const travelDate = formData.get('travelDate') as string
-
-  if (!pickupId || !destinationId || !seatsStr || !travelDate) {
+  if (!pickupId || !destinationId || !travelDate || seats < 1) {
     return { success: false, error: 'Please fill in all required fields.' }
   }
 
-  const seats = parseInt(seatsStr)
-  if (isNaN(seats) || seats < 1 || seats > 20) {
-    return { success: false, error: 'Invalid number of seats (1-20 allowed).' }
-  }
-
-  if (pickupId === destinationId) {
-    return { success: false, error: 'Pickup and destination cannot be the same.' }
-  }
-
-  // 4. Find Route
+  // Find Route
   const { data: routes, error: routeError } = await supabase
     .from('routes')
     .select('id')
@@ -65,28 +38,30 @@ export async function createTicketBooking(formData: FormData) {
     .eq('is_active', true)
     .is('deleted_at', null)
 
-  if (routeError) {
-    return { success: false, error: 'Database error finding routes.' }
-  }
-
-  if (!routes || routes.length === 0) {
+  if (routeError || !routes || routes.length === 0) {
     return { success: false, error: 'No active route found for these locations.' }
   }
 
   const routeId = routes[0].id
-
-  // 5. Find Schedule for this route on the specific travel date
   const travelDateObj = new Date(travelDate)
+  
   if (isNaN(travelDateObj.getTime())) {
     return { success: false, error: 'Invalid travel date.' }
   }
-  
+
   const nextDay = new Date(travelDateObj)
   nextDay.setDate(nextDay.getDate() + 1)
 
   const { data: schedules, error: scheduleError } = await supabase
     .from('schedules')
-    .select('id, available_seats, vehicles(owner_id, users(whatsapp_number))')
+    .select(`
+      id, 
+      departure_time, 
+      arrival_time, 
+      available_seats, 
+      base_fare,
+      vehicles(name, registration_number)
+    `)
     .eq('route_id', routeId)
     .eq('status', 'scheduled')
     .is('deleted_at', null)
@@ -103,30 +78,67 @@ export async function createTicketBooking(formData: FormData) {
     return { success: false, error: 'No buses with enough available seats for this route on the selected date.' }
   }
 
-  // 6. Atomic seat allocation — try each schedule until one succeeds
-  let selectedSchedule = null
-  for (const schedule of schedules) {
-    const { data: seatResult, error: seatError } = await supabase
-      .rpc('book_seats', {
-        p_schedule_id: schedule.id,
-        p_seats_requested: seats
-      })
+  return { success: true, schedules }
+}
 
-    if (seatError) {
-      console.error('book_seats RPC error:', seatError.message)
-      continue
-    }
+export async function createTicketBooking(formData: FormData) {
+  const supabase = await createClient()
 
-    if (seatResult === true) {
-      selectedSchedule = schedule
-      break
-    }
-    // seatResult === false means another concurrent booking took the seats; try next schedule
+  // 1. Authenticate user
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { success: false, error: 'AUTH_REQUIRED' }
   }
 
-  if (!selectedSchedule) {
-    return { success: false, error: 'Not enough available seats. Another booking may have just taken them. Please try again.' }
+  // 2. Rate limit check
+  const isAllowed = await checkRateLimit(user.id)
+  if (!isAllowed) {
+    return { success: false, error: 'Too many booking attempts. Please wait before trying again.' }
   }
+
+  // 3. Extract and validate inputs
+  const scheduleId = formData.get('scheduleId') as string
+  const seatsStr = formData.get('seats') as string
+  const travelDate = formData.get('travelDate') as string
+
+  if (!scheduleId || !seatsStr || !travelDate) {
+    return { success: false, error: 'Missing booking details. Please try again.' }
+  }
+
+  const seats = parseInt(seatsStr)
+  if (isNaN(seats) || seats < 1 || seats > 20) {
+    return { success: false, error: 'Invalid number of seats (1-20 allowed).' }
+  }
+
+  // 4. Verify schedule is valid and available
+  const { data: schedule, error: scheduleError } = await supabase
+    .from('schedules')
+    .select('id, available_seats, vehicles(owner_id, users(whatsapp_number))')
+    .eq('id', scheduleId)
+    .eq('status', 'scheduled')
+    .is('deleted_at', null)
+    .single()
+
+  if (scheduleError || !schedule) {
+    return { success: false, error: 'Schedule not found or no longer available.' }
+  }
+
+  if (schedule.available_seats < seats) {
+    return { success: false, error: 'Not enough seats available.' }
+  }
+
+  // 5. Atomic seat allocation
+  const { data: seatResult, error: seatError } = await supabase
+    .rpc('book_seats', {
+      p_schedule_id: schedule.id,
+      p_seats_requested: seats
+    })
+
+  if (seatError || seatResult === false) {
+    return { success: false, error: 'Seats were taken by another user. Please try again.' }
+  }
+
+  const selectedSchedule = schedule
 
   // 7. Create booking (seats are already atomically reserved)
   const bookingReference = generateBookingReference()

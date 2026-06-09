@@ -4,7 +4,8 @@ import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Database } from '@/types/database.types';
-import { createTicketBooking, createWholeVehicleBooking } from "./actions";
+import { createTicketBooking, createWholeVehicleBooking, searchSchedules } from "./actions";
+import { useAutoAnimate } from '@formkit/auto-animate/react';
 
 type Location = Database['public']['Tables']['locations']['Row'];
 type Vehicle = Database['public']['Tables']['vehicles']['Row'];
@@ -30,10 +31,16 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
   const [ticketLoading, setTicketLoading] = useState(false);
   const [ticketResult, setTicketResult] = useState<BookingResult | null>(null);
 
+  const [searchStep, setSearchStep] = useState<0 | 1>(0);
+  const [availableSchedules, setAvailableSchedules] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchParams, setSearchParams] = useState({ seats: '1', travelDate: '' });
+
   const [busLoading, setBusLoading] = useState(false);
   const [busResult, setBusResult] = useState<BookingResult | null>(null);
 
   const busesRef = useRef<HTMLElement | null>(null);
+  const [parent] = useAutoAnimate();
 
   const toggleBusSelection = (busId: string) => {
     setSelectedBuses((prev) =>
@@ -48,6 +55,29 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
       const y = busesRef.current.getBoundingClientRect().top + window.pageYOffset - 80;
       window.scrollTo({ top: y, behavior: "smooth" });
     }
+  };
+
+  const handleSearch = async (formData: FormData) => {
+    setSearchLoading(true);
+    setTicketResult(null);
+
+    const pickup = formData.get('pickup') as string;
+    const destination = formData.get('destination') as string;
+    const travelDate = formData.get('travelDate') as string;
+    const seatsStr = formData.get('seats') as string;
+    const seats = parseInt(seatsStr || '1');
+    
+    setSearchParams({ seats: seatsStr || '1', travelDate });
+
+    const result = await searchSchedules(pickup, destination, travelDate, seats);
+    
+    if (result.success && result.schedules) {
+      setAvailableSchedules(result.schedules);
+      setSearchStep(1);
+    } else {
+      setTicketResult({ success: false, error: result.error || 'Failed to search buses.' });
+    }
+    setSearchLoading(false);
   };
 
   const handleTicketBooking = async (formData: FormData) => {
@@ -126,8 +156,7 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
             <div className="absolute -top-4 -right-4 bg-[#00affe] text-[#003f5f] px-4 py-1 rounded-full text-xs font-bold shadow-lg uppercase tracking-wider">
               Pre-book & Save
             </div>
-
-            <form action={handleTicketBooking} className="space-y-6">
+            <div ref={parent} className="space-y-6">
               {ticketResult?.error && ticketResult.error === 'AUTH_REQUIRED' ? (
                 <div className="p-6 bg-[#004d40]/5 border border-[#004d40]/10 rounded-2xl flex flex-col items-center text-center shadow-sm">
                   <span className="material-symbols-outlined text-4xl text-[#006493] mb-2">account_circle</span>
@@ -142,9 +171,7 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                 <div className="p-4 bg-red-50 text-red-700 rounded-xl font-medium">
                   {ticketResult.error}
                 </div>
-              ) : null}
-
-              {ticketResult?.success ? (
+              ) : ticketResult?.success ? (
                 <div className="p-6 bg-green-50 rounded-xl flex flex-col items-center text-center">
                   <h3 className="text-2xl font-bold text-green-800 mb-2">Booking Confirmed!</h3>
                   <p className="text-green-700 mb-4">Reference: <strong>{ticketResult.booking_reference}</strong></p>
@@ -158,14 +185,17 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                   </a>
                   <button
                     type="button"
-                    onClick={() => setTicketResult(null)}
+                    onClick={() => {
+                      setTicketResult(null)
+                      setSearchStep(0)
+                    }}
                     className="mt-4 text-sm text-[#3f4945] font-semibold hover:underline"
                   >
                     Book another ticket
                   </button>
                 </div>
-              ) : (
-                <>
+              ) : searchStep === 0 ? (
+                <form action={handleSearch} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label htmlFor="pickup" className="text-sm font-semibold text-[#3f4945] ml-1">Pickup Location</label>
@@ -217,24 +247,70 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
 
                   <button
                     type="submit"
-                    disabled={ticketLoading}
+                    disabled={searchLoading}
                     className="group w-full button-gradient text-white py-4 rounded-xl font-semibold text-base shadow-xl hover:shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
                   >
-                    {ticketLoading ? (
-                      <>
-                        <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
-                        Searching...
-                      </>
+                    {searchLoading ? (
+                      <span className="flex items-center gap-2"><span className="animate-spin material-symbols-outlined">progress_activity</span> Searching...</span>
                     ) : (
-                      <>
-                        <span>Search Journeys</span>
-                        <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                      </>
+                      <>Search Buses <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span></>
                     )}
                   </button>
-                </>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xl font-bold text-[#00342b]">Available Buses</h3>
+                    <button 
+                      onClick={() => setSearchStep(0)} 
+                      className="text-sm text-[#006493] hover:underline font-semibold flex items-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">edit</span> Modify Search
+                    </button>
+                  </div>
+                  
+                  <div className="flex flex-col gap-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                    {availableSchedules.map((schedule) => {
+                      const depTime = new Date(schedule.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      const arrTime = new Date(schedule.arrival_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      const busName = schedule.vehicles?.name || 'Bus'
+                      
+                      return (
+                        <div key={schedule.id} className="bg-white/80 border border-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div>
+                            <h4 className="font-bold text-[#00342b] text-lg">{busName}</h4>
+                            <div className="flex items-center gap-2 text-sm text-[#3f4945] mt-1">
+                              <span className="font-semibold text-[#006493]">{depTime}</span>
+                              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                              <span className="font-semibold text-[#006493]">{arrTime}</span>
+                            </div>
+                            <div className="mt-2 text-xs font-semibold px-2 py-0.5 bg-green-50 text-green-700 rounded-md inline-block">
+                              {schedule.available_seats} Seats Available
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col items-end gap-2">
+                            <div className="text-xl font-bold text-[#00342b]">₹{schedule.base_fare}</div>
+                            <form action={handleTicketBooking}>
+                              <input type="hidden" name="scheduleId" value={schedule.id} />
+                              <input type="hidden" name="seats" value={searchParams.seats} />
+                              <input type="hidden" name="travelDate" value={searchParams.travelDate} />
+                              <button
+                                type="submit"
+                                disabled={ticketLoading}
+                                className="bg-[#00affe] text-white px-5 py-2 rounded-xl font-bold text-sm shadow-md hover:bg-[#009ae0] hover:-translate-y-0.5 transition-all disabled:opacity-50 flex items-center justify-center min-w-[120px]"
+                              >
+                                {ticketLoading ? <span className="animate-spin material-symbols-outlined text-[18px]">progress_activity</span> : 'Select & Book'}
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
               )}
-            </form>
+            </div>
           </div>
         </div>
       </section>

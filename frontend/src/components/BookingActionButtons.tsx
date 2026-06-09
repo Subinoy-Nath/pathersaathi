@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { updateBookingStatus } from '@/app/operator/actions'
 
 type BookingActionButtonsProps = {
@@ -11,6 +12,7 @@ type BookingActionButtonsProps = {
 }
 
 export default function BookingActionButtons({ bookingId, currentStatus, customerPhone, bookingReference }: BookingActionButtonsProps) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [showCancelForm, setShowCancelForm] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
@@ -27,6 +29,7 @@ export default function BookingActionButtons({ bookingId, currentStatus, custome
         setShowRejectInput(false)
         setCancelReason('')
         setRejectReason('')
+        router.refresh()
 
         // Trigger WhatsApp confirmation if approved and phone exists
         if (status === 'approved' && customerPhone) {

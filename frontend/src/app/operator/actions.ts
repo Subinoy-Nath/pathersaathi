@@ -34,6 +34,7 @@ export async function updateBookingStatus(
     return { error: rpcError.message || 'Failed to update booking status' }
   }
 
-  revalidatePath('/operator')
+  // Use 'page' to strictly revalidate only the /operator route segment, preventing full-layout reloads
+  revalidatePath('/operator', 'page')
   return { success: true }
 }

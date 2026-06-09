@@ -1,8 +1,10 @@
+import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import BookingActionButtons from '@/components/BookingActionButtons'
 import LiveBookingsRefresher from '@/components/LiveBookingsRefresher'
+import ClearHistoryButton from '@/components/ClearHistoryButton'
 import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
@@ -80,6 +82,7 @@ export default async function OperatorDashboard() {
         start_date,
         end_date,
         seats_requested,
+        updated_at,
         users!bookings_customer_id_fkey ( name, phone_number ),
         schedules (
           departure_time,
@@ -113,6 +116,21 @@ export default async function OperatorDashboard() {
     } else {
       console.error(error)
     }
+  }
+
+  // Filter out cleared bookings based on cookie
+  const cookieStore = await cookies()
+  const clearedTimeStr = cookieStore.get('operator_cleared_time')?.value
+  const clearedTime = clearedTimeStr ? parseInt(clearedTimeStr) : 0
+
+  if (clearedTime > 0) {
+    bookings = bookings.filter(b => {
+      if (b.status === 'rejected' || b.status === 'cancelled') {
+        const updatedTime = new Date(b.updated_at).getTime()
+        if (updatedTime <= clearedTime) return false
+      }
+      return true
+    })
   }
 
   return (
@@ -220,6 +238,7 @@ export default async function OperatorDashboard() {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-[#00342b]">Recent Bookings</h2>
               <div className="flex gap-2">
+                <ClearHistoryButton />
                 <button className="bg-[#e6e8e9] px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-[#e1e3e4] transition-colors">Export CSV</button>
                 <button className="bg-[#e6e8e9] px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-[#e1e3e4] transition-colors">Filters</button>
               </div>

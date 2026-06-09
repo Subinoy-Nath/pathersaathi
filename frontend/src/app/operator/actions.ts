@@ -38,3 +38,12 @@ export async function updateBookingStatus(
   revalidatePath('/operator', 'page')
   return { success: true }
 }
+
+import { cookies } from 'next/headers'
+
+export async function clearFrontendHistory() {
+  const cookieStore = await cookies()
+  cookieStore.set('operator_cleared_time', Date.now().toString(), { path: '/' })
+  revalidatePath('/operator', 'page')
+  return { success: true }
+}

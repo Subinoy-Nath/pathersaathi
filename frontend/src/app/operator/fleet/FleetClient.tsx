@@ -467,8 +467,8 @@ export default function FleetClient({
           ) : (
             <div className="glass-card rounded-2xl border border-white/40 overflow-hidden shadow-xl shadow-[#00342b]/5">
               <div className="overflow-x-auto glass-scroll">
-                <table className="w-full text-left border-collapse">
-                  <thead>
+                <table className="w-full text-left border-collapse block md:table">
+                  <thead className="hidden md:table-header-group">
                     <tr className="bg-[#00342b]/5 border-b border-[#bfc9c4]/30">
                       <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Vehicle</th>
                       <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Route</th>
@@ -487,35 +487,42 @@ export default function FleetClient({
                       const arrTime = s.arrival_time ? new Date(s.arrival_time) : null
 
                       return (
-                        <tr key={s.id} className="hover:bg-[#00342b]/5 transition-colors group">
-                          <td className="px-6 py-4">
+                        <tr key={s.id} className="hover:bg-[#00342b]/5 transition-colors group block md:table-row bg-white/40 md:bg-transparent rounded-2xl md:rounded-none border border-white/60 md:border-none p-4 mb-4 md:mb-0 shadow-sm md:shadow-none">
+                          <td className="px-0 md:px-6 py-2 md:py-4 block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
+                            <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Vehicle</div>
                             <div className="flex items-center gap-2">
                               <span className="material-symbols-outlined text-[#00affe] text-[20px]">directions_bus</span>
                               <span className="font-bold text-[#191c1d]">{s.vehicles?.name || 'Unknown'}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-0 md:px-6 py-3 md:py-4 block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
+                            <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Route</div>
                             <div className="flex flex-col">
                               <span className="text-sm font-semibold text-[#191c1d]">{originName} → {destName}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm">
+                          <td className="px-0 md:px-6 py-3 md:py-4 text-sm block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
+                            <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Departure</div>
                             <div className="font-medium text-[#191c1d]">{depTime ? depTime.toLocaleDateString('en-IN', { month: 'short', day: 'numeric'}) : '-'}</div>
                             <div className="text-xs text-[#3f4945]">{depTime ? depTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit'}) : '-'}</div>
                           </td>
-                          <td className="px-6 py-4 text-sm">
+                          <td className="px-0 md:px-6 py-3 md:py-4 text-sm block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
+                            <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Arrival</div>
                             <div className="font-medium text-[#191c1d]">{arrTime ? arrTime.toLocaleDateString('en-IN', { month: 'short', day: 'numeric'}) : '-'}</div>
                             <div className="text-xs text-[#3f4945]">{arrTime ? arrTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit'}) : '-'}</div>
                           </td>
-                          <td className="px-6 py-4 text-center">
+                          <td className="px-0 md:px-6 py-3 md:py-4 text-left md:text-center block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
+                            <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Seats</div>
                             <span className="inline-flex items-center gap-1 font-bold text-[#006493] bg-[#cae6ff] px-2 py-0.5 rounded text-xs">
                               {s.available_seats}/{s.total_seats}
                             </span>
                           </td>
-                          <td className="px-6 py-4 font-mono font-bold text-[#191c1d] text-right">
+                          <td className="px-0 md:px-6 py-3 md:py-4 font-mono font-bold text-[#191c1d] text-left md:text-right block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
+                            <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Fare</div>
                             {s.base_fare ? `₹${s.base_fare}` : '-'}
                           </td>
-                          <td className="px-6 py-4 text-center">
+                          <td className="px-0 md:px-6 py-4 text-left md:text-center block md:table-cell">
+                            <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Status</div>
                             <span className={`inline-flex px-3 py-1 text-xs font-bold uppercase tracking-wide rounded-full ${
                               s.status === 'scheduled' ? 'bg-[#afefdd] text-[#00201a]' :
                               s.status === 'completed' ? 'bg-[#cae6ff] text-[#001e30]' :

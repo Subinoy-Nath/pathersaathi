@@ -27,6 +27,10 @@ export default function FleetClient({
   const [showVehicleForm, setShowVehicleForm] = useState(false)
   const [showRouteForm, setShowRouteForm] = useState(false)
   const [showScheduleForm, setShowScheduleForm] = useState(false)
+  const [schedulePage, setSchedulePage] = useState(1)
+  const schedulesPerPage = 10
+  const totalSchedulePages = Math.ceil(schedules.length / schedulesPerPage)
+  const paginatedSchedules = schedules.slice((schedulePage - 1) * schedulesPerPage, schedulePage * schedulesPerPage)
 
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{ success?: boolean; error?: string } | null>(null)
@@ -459,7 +463,7 @@ export default function FleetClient({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#bfc9c4]/20">
-                    {schedules.map((s) => {
+                    {paginatedSchedules.map((s) => {
                       const originName = s.routes?.origin?.name || 'Unknown'
                       const destName = s.routes?.destination?.name || 'Unknown'
                       const depTime = s.departure_time ? new Date(s.departure_time) : null
@@ -509,6 +513,30 @@ export default function FleetClient({
                   </tbody>
                 </table>
               </div>
+              
+              {totalSchedulePages > 1 && (
+                <div className="flex justify-between items-center px-6 py-4 bg-[#f8fafb] border-t border-[#bfc9c4]/30">
+                  <span className="text-sm text-[#3f4945] font-medium">
+                    Showing {(schedulePage - 1) * schedulesPerPage + 1} to {Math.min(schedulePage * schedulesPerPage, schedules.length)} of {schedules.length} schedules
+                  </span>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setSchedulePage(p => Math.max(1, p - 1))}
+                      disabled={schedulePage === 1}
+                      className="px-4 py-2 border border-[#bfc9c4] rounded-lg text-sm font-semibold text-[#00342b] bg-white hover:bg-[#00342b]/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <button 
+                      onClick={() => setSchedulePage(p => Math.min(totalSchedulePages, p + 1))}
+                      disabled={schedulePage === totalSchedulePages}
+                      className="px-4 py-2 border border-[#bfc9c4] rounded-lg text-sm font-semibold text-[#00342b] bg-white hover:bg-[#00342b]/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>

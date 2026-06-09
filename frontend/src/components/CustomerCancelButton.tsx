@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { cancelBooking } from '@/app/bookings/actions'
 
 type CustomerCancelButtonProps = {
@@ -9,6 +10,7 @@ type CustomerCancelButtonProps = {
 }
 
 export default function CustomerCancelButton({ bookingId, status }: CustomerCancelButtonProps) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   if (status !== 'pending') {
@@ -21,6 +23,8 @@ export default function CustomerCancelButton({ bookingId, status }: CustomerCanc
         const result = await cancelBooking(bookingId)
         if (result.error) {
           alert(result.error)
+        } else {
+          router.refresh()
         }
       })
     }

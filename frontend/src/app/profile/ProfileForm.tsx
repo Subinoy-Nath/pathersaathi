@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { updateProfile, updatePassword } from './actions'
 
 type ProfileFormProps = {
@@ -12,6 +13,7 @@ type ProfileFormProps = {
 }
 
 export default function ProfileForm({ name, phone_number, email, role, verification_status }: ProfileFormProps) {
+  const router = useRouter()
   const [profileLoading, setProfileLoading] = useState(false)
   const [profileResult, setProfileResult] = useState<{ success?: boolean; error?: string } | null>(null)
 
@@ -44,6 +46,9 @@ export default function ProfileForm({ name, phone_number, email, role, verificat
     try {
       const result = await updateProfile(formData)
       setProfileResult(result)
+      if (result.success) {
+        router.refresh()
+      }
     } catch {
       setProfileResult({ error: 'An unexpected error occurred.' })
     }
@@ -72,6 +77,9 @@ export default function ProfileForm({ name, phone_number, email, role, verificat
     try {
       const result = await updatePassword(formData)
       setPasswordResult(result)
+      if (result.success) {
+        router.refresh()
+      }
     } catch {
       setPasswordResult({ error: 'An unexpected error occurred.' })
     }

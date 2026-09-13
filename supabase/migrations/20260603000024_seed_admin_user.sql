@@ -33,12 +33,13 @@ BEGIN
 
         -- Insert corresponding auth identity
         INSERT INTO auth.identities (
-            id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+            id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
         ) VALUES (
             gen_random_uuid(),
             v_user_id,
             format('{"sub":"%s","email":"%s"}', v_user_id::text, 'support@pathersaathi.in')::jsonb,
             'email',
+            v_user_id::text,
             current_timestamp,
             current_timestamp,
             current_timestamp

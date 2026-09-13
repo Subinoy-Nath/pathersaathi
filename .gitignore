@@ -88,12 +88,14 @@ pnpm-debug.log*
 .agents/
 .mcp.json
 skills-lock.json
+graphify-out/
 
 # ───────────────────────────────────────────
 # Supabase
 # ───────────────────────────────────────────
 supabase/.branches/
 supabase/.temp/
+supabase/dump*.sql
 
 # ───────────────────────────────────────────
 # LaTeX

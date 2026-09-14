@@ -133,3 +133,7 @@ Verify all implementation steps locally using full local Supabase stack (`supaba
 - [ ] Fleet operators can configure recurring daily schedules.
 - [ ] Password reset and magic link flows work with Supabase Auth.
 
+## 2026-09-14T18:51:07Z
+
+The user has requested to suspend execution after Milestone 2 is complete due to token constraints. Do not start Milestone M3, M4, or M5. Please conclude your run immediately after committing M2, perform any final M2 wrap-up, and exit cleanly so I can generate documentation.
+

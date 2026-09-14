@@ -83,3 +83,31 @@ body {
   .glass-scroll::-webkit-scrollbar-track { background: transparent; }
   .glass-scroll::-webkit-scrollbar-thumb { background: rgba(0, 77, 64, 0.1); border-radius: 10px; }
 }
+
+/* Custom pulse animation for live bus marker in Leaflet */
+@keyframes bus-radar {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+}
+
+.bus-pulse-ring {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  top: -6px;
+  left: -6px;
+  border-radius: 50%;
+  background: rgba(0, 230, 118, 0.45);
+  animation: bus-radar 2s infinite ease-out;
+  pointer-events: none;
+}

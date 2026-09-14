@@ -32,9 +32,20 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const pathname = request.nextUrl.pathname
+
+  // Driver protected routes — redirect to /driver/login if not authenticated
+  if (pathname.startsWith('/driver') && !pathname.startsWith('/driver/login')) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/driver/login'
+      return NextResponse.redirect(url)
+    }
+  }
+
   // Protected routes — redirect to /login if not authenticated
   const protectedPaths = ['/operator', '/dashboard', '/profile', '/bookings']
-  const isProtected = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
+  const isProtected = protectedPaths.some(path => pathname.startsWith(path))
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone()

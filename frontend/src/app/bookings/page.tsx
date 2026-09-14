@@ -21,12 +21,15 @@ export default async function BookingsPage() {
       booking_reference,
       booking_type,
       status,
+      schedule_id,
       travel_date,
       start_date,
       end_date,
       seats_requested,
       operator_notes,
       schedules (
+        id,
+        status,
         departure_time,
         vehicles (
           name,
@@ -184,7 +187,19 @@ export default async function BookingsPage() {
                     )}
 
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-6">
-                      <CustomerCancelButton bookingId={booking.id} status={booking.status} />
+                      <div className="flex flex-wrap items-center gap-3">
+                        <CustomerCancelButton bookingId={booking.id} status={booking.status} />
+
+                        {booking.schedule_id && (booking.status === 'approved' || schedule?.status === 'in_transit') && (
+                          <Link
+                            href={`/bookings/track/${booking.schedule_id}`}
+                            className="inline-flex items-center gap-2 bg-[#004D40] hover:bg-[#00382d] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all duration-200 active:scale-95"
+                          >
+                            <span className="w-2.5 h-2.5 rounded-full bg-[#00E676] animate-pulse" />
+                            <span>Track Bus Live / বাস ট্র্যাক</span>
+                          </Link>
+                        )}
+                      </div>
                       
                       {operatorPhone && (
                         <a 

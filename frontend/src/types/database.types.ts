@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_events: {
+        Row: {
+          actor_id: string
+          booking_id: string
+          created_at: string
+          from_status: string | null
+          id: string
+          reason: string | null
+          to_status: string
+        }
+        Insert: {
+          actor_id: string
+          booking_id: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          reason?: string | null
+          to_status: string
+        }
+        Update: {
+          actor_id?: string
+          booking_id?: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          reason?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_events_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_vehicles: {
         Row: {
           booking_id: string
@@ -128,47 +173,82 @@ export type Database = {
           },
         ]
       }
-      booking_events: {
+      broadcast_notifications: {
         Row: {
-          id: string
-          booking_id: string
-          actor_id: string
-          from_status: string | null
-          to_status: string
-          reason: string | null
+          alert_type: string
           created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          message: string
+          operator_id: string
+          route_id: string | null
+          schedule_id: string | null
+          severity: string
+          starts_at: string
+          title: string
+          updated_at: string
+          vehicle_id: string | null
         }
         Insert: {
-          id?: string
-          booking_id: string
-          actor_id: string
-          from_status?: string | null
-          to_status: string
-          reason?: string | null
+          alert_type: string
           created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          message: string
+          operator_id: string
+          route_id?: string | null
+          schedule_id?: string | null
+          severity?: string
+          starts_at?: string
+          title: string
+          updated_at?: string
+          vehicle_id?: string | null
         }
         Update: {
-          id?: string
-          booking_id?: string
-          actor_id?: string
-          from_status?: string | null
-          to_status?: string
-          reason?: string | null
+          alert_type?: string
           created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          message?: string
+          operator_id?: string
+          route_id?: string | null
+          schedule_id?: string | null
+          severity?: string
+          starts_at?: string
+          title?: string
+          updated_at?: string
+          vehicle_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "booking_events_booking_id_fkey"
-            columns: ["booking_id"]
+            foreignKeyName: "broadcast_notifications_operator_id_fkey"
+            columns: ["operator_id"]
             isOneToOne: false
-            referencedRelation: "bookings"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "booking_events_actor_id_fkey"
-            columns: ["actor_id"]
+            foreignKeyName: "broadcast_notifications_route_id_fkey"
+            columns: ["route_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_notifications_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_notifications_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -199,6 +279,92 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      recurring_schedule_templates: {
+        Row: {
+          base_fare: number
+          created_at: string
+          days_of_week: number[]
+          default_driver_id: string | null
+          deleted_at: string | null
+          departure_time: string
+          estimated_duration_mins: number
+          id: string
+          is_paused: boolean
+          operator_id: string
+          pause_reason: string | null
+          paused_until: string | null
+          route_id: string
+          total_seats: number
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          base_fare: number
+          created_at?: string
+          days_of_week?: number[]
+          default_driver_id?: string | null
+          deleted_at?: string | null
+          departure_time: string
+          estimated_duration_mins: number
+          id?: string
+          is_paused?: boolean
+          operator_id: string
+          pause_reason?: string | null
+          paused_until?: string | null
+          route_id: string
+          total_seats: number
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          base_fare?: number
+          created_at?: string
+          days_of_week?: number[]
+          default_driver_id?: string | null
+          deleted_at?: string | null
+          departure_time?: string
+          estimated_duration_mins?: number
+          id?: string
+          is_paused?: boolean
+          operator_id?: string
+          pause_reason?: string | null
+          paused_until?: string | null
+          route_id?: string
+          total_seats?: number
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_schedule_templates_default_driver_id_fkey"
+            columns: ["default_driver_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_schedule_templates_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_schedule_templates_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_schedule_templates_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       routes: {
         Row: {
@@ -259,12 +425,17 @@ export type Database = {
           arrival_time: string
           available_seats: number
           base_fare: number | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           deleted_at: string | null
           departure_time: string
+          driver_id: string | null
           id: string
+          pause_reason: string | null
           route_id: string
           status: string
+          template_id: string | null
           total_seats: number
           updated_at: string
           vehicle_id: string
@@ -273,12 +444,17 @@ export type Database = {
           arrival_time: string
           available_seats: number
           base_fare?: number | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           deleted_at?: string | null
           departure_time: string
+          driver_id?: string | null
           id?: string
+          pause_reason?: string | null
           route_id: string
           status?: string
+          template_id?: string | null
           total_seats: number
           updated_at?: string
           vehicle_id: string
@@ -287,22 +463,48 @@ export type Database = {
           arrival_time?: string
           available_seats?: number
           base_fare?: number | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           deleted_at?: string | null
           departure_time?: string
+          driver_id?: string | null
           id?: string
+          pause_reason?: string | null
           route_id?: string
           status?: string
+          template_id?: string | null
           total_seats?: number
           updated_at?: string
           vehicle_id?: string
         }
         Relationships: [
           {
+            foreignKeyName: "schedules_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedules_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "schedules_route_id_fkey"
             columns: ["route_id"]
             isOneToOne: false
             referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_schedule_templates"
             referencedColumns: ["id"]
           },
           {
@@ -314,11 +516,72 @@ export type Database = {
           },
         ]
       }
+      trip_locations: {
+        Row: {
+          accuracy: number | null
+          driver_id: string
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          recorded_at: string
+          schedule_id: string
+          speed: number | null
+          vehicle_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          driver_id: string
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          recorded_at?: string
+          schedule_id: string
+          speed?: number | null
+          vehicle_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          driver_id?: string
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          recorded_at?: string
+          schedule_id?: string
+          speed?: number | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_locations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_locations_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_locations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string
           deleted_at: string | null
-          email: string
+          email: string | null
           id: string
           name: string
           operator_business_details: Json | null
@@ -331,7 +594,7 @@ export type Database = {
         Insert: {
           created_at?: string
           deleted_at?: string | null
-          email: string
+          email?: string | null
           id: string
           name: string
           operator_business_details?: Json | null
@@ -344,7 +607,7 @@ export type Database = {
         Update: {
           created_at?: string
           deleted_at?: string | null
-          email?: string
+          email?: string | null
           id?: string
           name?: string
           operator_business_details?: Json | null
@@ -369,7 +632,7 @@ export type Database = {
           is_available: boolean
           maintenance_status: string
           name: string
-          owner_id: string
+          owner_id: string | null
           permit_expiry_date: string | null
           price_per_day: number | null
           registration_number: string | null
@@ -388,7 +651,7 @@ export type Database = {
           is_available?: boolean
           maintenance_status?: string
           name: string
-          owner_id: string
+          owner_id?: string | null
           permit_expiry_date?: string | null
           price_per_day?: number | null
           registration_number?: string | null
@@ -407,7 +670,7 @@ export type Database = {
           is_available?: boolean
           maintenance_status?: string
           name?: string
-          owner_id?: string
+          owner_id?: string | null
           permit_expiry_date?: string | null
           price_per_day?: number | null
           registration_number?: string | null
@@ -429,16 +692,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      book_whole_vehicle_atomic: {
-        Args: {
-          p_vehicle_ids: string[]
-          p_travel_date: string
-          p_occasion: string
-          p_customer_id: string
-          p_booking_reference: string
-        }
-        Returns: string
-      }
       book_seats: {
         Args: {
           p_schedule_id: string
@@ -446,16 +699,15 @@ export type Database = {
         }
         Returns: boolean
       }
-      restore_seats: {
+      book_whole_vehicle_atomic: {
         Args: {
-          p_schedule_id: string
-          p_seats_to_restore: number
+          p_booking_reference: string
+          p_customer_id: string
+          p_occasion: string
+          p_travel_date: string
+          p_vehicle_ids: string[]
         }
-        Returns: undefined
-      }
-      expire_stale_bookings: {
-        Args: Record<string, never>
-        Returns: number
+        Returns: string
       }
       cancel_booking_atomic: {
         Args: {
@@ -464,10 +716,45 @@ export type Database = {
         }
         Returns: boolean
       }
+      driver_end_trip: {
+        Args: {
+          p_schedule_id: string
+        }
+        Returns: Json
+      }
+      driver_start_trip: {
+        Args: {
+          p_schedule_id: string
+        }
+        Returns: Json
+      }
+      expire_stale_bookings: {
+        Args: Record<string, never>
+        Returns: number
+      }
+      generate_rolling_schedules: {
+        Args: {
+          p_days_ahead?: number
+        }
+        Returns: Json
+      }
+      purge_stale_trip_locations: {
+        Args: {
+          p_retention_days?: number
+        }
+        Returns: number
+      }
+      restore_seats: {
+        Args: {
+          p_schedule_id: string
+          p_seats_to_restore: number
+        }
+        Returns: undefined
+      }
       update_booking_status_atomic: {
         Args: {
-          p_booking_id: string
           p_actor_id: string
+          p_booking_id: string
           p_new_status: string
           p_reason?: string | null
         }

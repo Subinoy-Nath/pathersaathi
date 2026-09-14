@@ -7,7 +7,7 @@ import { updateProfile, updatePassword } from './actions'
 type ProfileFormProps = {
   name: string
   phone_number: string | null
-  email: string
+  email: string | null
   role: string
   verification_status: string
 }
@@ -94,7 +94,7 @@ export default function ProfileForm({ name, phone_number, email, role, verificat
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <span className="text-sm text-gray-500 block mb-1">Email</span>
-            <span className="font-medium text-gray-900">{email}</span>
+            <span className="font-medium text-gray-900">{email || 'Not provided'}</span>
           </div>
           <div>
             <span className="text-sm text-gray-500 block mb-1">Role</span>

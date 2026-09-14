@@ -87,3 +87,49 @@ Verify all implementation steps locally using full local Supabase stack (`supaba
 - [ ] Password reset and magic link flows work with Supabase Auth.
 - [ ] Privacy Policy page is fully accessible via routing and matches system UI styling.
 
+## 2026-09-14T16:52:54Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Launched
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: Full team
+
+Implement the Pather Saathi platform updates (Driver Live Tracking, Operator Recurring Schedules, Auth Upgrades, Privacy Policy) on an isolated Git branch based on the recently created plans in the docs folder.
+
+Working directory: /home/biswajyoti-nath/Projects/pathersaathi
+Integrity mode: development
+
+## Requirements
+
+### R1. Git DevOps & Isolated Feature Branching
+Create and execute all implementation work on an isolated Git branch (`feat/platform-enhancements-implementation`) created from `main`. Strictly follow DevOps & Software Engineering rules to safeguard the existing production state on Vercel and cloud Supabase. Ensure zero breaking changes to existing production schema migrations or live endpoints.
+
+### R2. Driver & Live Tracking Implementation
+Build the simplified low-literacy driver module and real-time position broadcasting system based on `docs/DRIVER_LIVE_TRACKING_PLAN.md`.
+
+### R3. Operator Dashboard & Recurring Schedule Implementation
+Implement recurring daily bus schedules, pause/resume controls for fleet owners, and homepage "not running" alert notifications based on `docs/OPERATOR_DASHBOARD_PLAN.md`.
+
+### R4. Authentication & Security Upgrades
+Implement password reset/recovery, magic links, OTP/SMS interface abstractions, and the dedicated Privacy Policy page as specified in `docs/AUTH_AND_SECURITY_PLAN.md`.
+
+### R5. Local Supabase, MCP & Localhost Verification
+Verify all implementation steps locally using full local Supabase stack (`supabase start`) and Next.js dev server (`localhost:3000`), ensuring all database migrations apply cleanly and `npm run build` succeeds without errors.
+
+## Acceptance Criteria
+
+### [DevOps & Branch Isolation]
+- [ ] All changes exist exclusively on the new branch.
+- [ ] `main` branch and live Vercel deployment remain untouched and unbroken.
+- [ ] Next.js build (`npm run build`) completes cleanly with 0 build or lint errors.
+
+### [Local Environment & Supabase Verification]
+- [ ] Local Supabase database migrations apply cleanly without conflict.
+- [ ] Local dev server (`localhost:3000`) runs and serves all pages and actions reliably.
+
+### [Feature Implementation]
+- [ ] Driver view features low-literacy high-contrast UI controls.
+- [ ] Fleet operators can configure recurring daily schedules.
+- [ ] Password reset and magic link flows work with Supabase Auth.
+

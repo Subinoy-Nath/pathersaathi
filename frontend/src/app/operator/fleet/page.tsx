@@ -75,7 +75,35 @@ export default async function FleetPage() {
     .is('deleted_at', null)
     .order('name')
 
-  // 6. Fetch schedules for operator's vehicles
+  // 6. Fetch recurring schedule templates for operator
+  const { data: templatesData } = await supabase
+    .from('recurring_schedule_templates')
+    .select(`
+      id,
+      operator_id,
+      vehicle_id,
+      route_id,
+      default_driver_id,
+      departure_time,
+      estimated_duration_mins,
+      days_of_week,
+      base_fare,
+      total_seats,
+      is_paused,
+      pause_reason,
+      paused_until,
+      created_at,
+      vehicles ( name, registration_number, capacity_seats ),
+      routes (
+        origin:locations!routes_origin_id_fkey ( name ),
+        destination:locations!routes_destination_id_fkey ( name )
+      )
+    `)
+    .eq('operator_id', user.id)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+
+  // 7. Fetch concrete schedules for operator's vehicles
   const vehicleIds = vehicles?.map(v => v.id) || []
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let schedules: any[] = []
@@ -91,9 +119,13 @@ export default async function FleetPage() {
         available_seats,
         base_fare,
         status,
+        pause_reason,
+        cancelled_at,
+        cancelled_by,
+        template_id,
         vehicle_id,
         route_id,
-        vehicles ( name ),
+        vehicles ( name, registration_number ),
         routes (
           origin:locations!routes_origin_id_fkey ( name ),
           destination:locations!routes_destination_id_fkey ( name )
@@ -102,7 +134,7 @@ export default async function FleetPage() {
       .in('vehicle_id', vehicleIds)
       .is('deleted_at', null)
       .order('departure_time', { ascending: false })
-      .limit(50)
+      .limit(100)
 
     if (schedulesData) {
       schedules = schedulesData
@@ -129,10 +161,10 @@ export default async function FleetPage() {
               <span className="material-symbols-outlined">directions_bus</span>
               <span className="text-sm">Fleet Monitoring</span>
             </Link>
-            <a href="#" className="flex items-center gap-3 px-4 py-3 text-[#3f4945] hover:bg-[#e6e8e9] rounded-lg hover:translate-x-1 duration-300">
+            <Link href="/operator" className="flex items-center gap-3 px-4 py-3 text-[#3f4945] hover:bg-[#e6e8e9] rounded-lg hover:translate-x-1 duration-300">
               <span className="material-symbols-outlined">receipt_long</span>
-              <span className="text-sm">Booking Ledger</span>
-            </a>
+              <span className="text-sm">Bookings & Ledgers</span>
+            </Link>
           </nav>
         </aside>
 
@@ -147,8 +179,8 @@ export default async function FleetPage() {
           {/* Header Section */}
           <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h1 className="text-3xl lg:text-4xl font-bold text-[#00342b]">Fleet Management</h1>
-              <p className="text-base font-medium text-[#3f4945] mt-1">Manage your vehicles, routes, and schedules</p>
+              <h1 className="text-3xl lg:text-4xl font-bold text-[#00342b]">Fleet Operations Cockpit</h1>
+              <p className="text-base font-medium text-[#3f4945] mt-1">Manage vehicles, routes, recurring templates, and daily departure runs</p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Link href="/operator" className="glass-card flex items-center gap-2 px-6 py-2.5 rounded-xl text-[#00342b] border border-[#00342b]/10 hover:bg-[#004d40]/5 transition-all">
@@ -164,6 +196,7 @@ export default async function FleetPage() {
             globalRoutes={globalRoutes || []}
             allRoutes={allRoutes}
             locations={locations || []}
+            templates={templatesData || []}
             schedules={schedules}
             isVerified={profile?.verification_status === 'verified'}
           />

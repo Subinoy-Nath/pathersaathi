@@ -75,6 +75,45 @@ export async function searchSchedules(pickupId: string, destinationId: string, t
   }
 
   if (!schedules || schedules.length === 0) {
+    // 1. Check for active broadcast notifications on this route
+    const nowIso = new Date().toISOString()
+    const { data: routeAlerts } = await supabase
+      .from('broadcast_notifications')
+      .select('id, title, message, severity, alert_type')
+      .eq('route_id', routeId)
+      .eq('is_active', true)
+      .lte('starts_at', nowIso)
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    if (routeAlerts && routeAlerts.length > 0) {
+      const alert = routeAlerts[0]
+      return {
+        success: false,
+        error: `Service Suspended: ${alert.title}. ${alert.message}`
+      }
+    }
+
+    // 2. Check for paused or cancelled runs on this route for this travel date
+    const { data: pausedSchedules } = await supabase
+      .from('schedules')
+      .select('id, pause_reason, status, departure_time, vehicles(name)')
+      .eq('route_id', routeId)
+      .in('status', ['paused', 'cancelled'])
+      .is('deleted_at', null)
+      .gte('departure_time', travelDateObj.toISOString())
+      .lt('departure_time', nextDay.toISOString())
+
+    if (pausedSchedules && pausedSchedules.length > 0) {
+      const reasons = pausedSchedules.map(p => p.pause_reason).filter(Boolean)
+      const primaryReason = reasons.length > 0 ? reasons[0] : 'Operational suspension or road conditions'
+      return {
+        success: false,
+        error: `Service Paused: Scheduled departures on this route are currently suspended (${primaryReason}).`
+      }
+    }
+
     return { success: false, error: 'No buses with enough available seats for this route on the selected date.' }
   }
 

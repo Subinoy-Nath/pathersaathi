@@ -137,3 +137,46 @@ Verify all implementation steps locally using full local Supabase stack (`supaba
 
 The user has requested to suspend execution after Milestone 2 is complete due to token constraints. Do not start Milestone M3, M4, or M5. Please conclude your run immediately after committing M2, perform any final M2 wrap-up, and exit cleanly so I can generate documentation.
 
+
+## 2026-09-14T20:37:18Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Launched
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: Full team
+
+Resume the implementation of the Pather Saathi platform updates on the existing `feat/platform-enhancements-implementation` branch. M1 and M2 are complete. This phase covers M3 (Operator Dashboard & Recurring Schedules), M4 (Auth Upgrades & Privacy Policy), and M5 (Verification).
+
+Working directory: /home/biswajyoti-nath/Projects/pathersaathi
+Integrity mode: development
+
+## Requirements
+
+### R1. Environment & Branch Continuity
+Ensure all work continues strictly on the existing `feat/platform-enhancements-implementation` branch. Do not create a new branch.
+
+### R2. Operator Dashboard & Recurring Schedule Implementation (M3)
+Implement recurring daily bus schedules, pause/resume controls for fleet owners, and homepage "not running" alert notifications based on `docs/OPERATOR_DASHBOARD_PLAN.md`. Use the schema migrations generated in M1.
+
+### R3. Authentication & Security Upgrades (M4)
+Implement password reset/recovery, magic links, OTP/SMS interface abstractions, and the dedicated Privacy Policy page as specified in `docs/AUTH_AND_SECURITY_PLAN.md`.
+
+### R4. Local Supabase & Localhost Verification (M5)
+Verify all implemented steps locally using the full local Supabase stack and Next.js dev server (`localhost:3000`). Ensure `npm run build` succeeds without errors or warnings.
+
+## Acceptance Criteria
+
+### [DevOps & Branch Continuity]
+- [ ] All changes are committed to the existing `feat/platform-enhancements-implementation` branch.
+- [ ] `main` branch remains untouched.
+
+### [Feature Implementation]
+- [ ] Fleet operators can configure recurring daily schedules and toggle run status.
+- [ ] Outage notifications dynamically reflect on the homepage for paused runs.
+- [ ] Password reset and magic link flows work with Supabase Auth.
+- [ ] Privacy Policy page is fully accessible via routing.
+
+### [Verification]
+- [ ] Local dev server (`localhost:3000`) runs and serves all new pages and actions reliably.
+- [ ] Next.js build (`npm run build`) completes cleanly with 0 build or lint errors.

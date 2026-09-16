@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Database } from '@/types/database.types';
 import { createTicketBooking, createWholeVehicleBooking, searchSchedules } from "./actions";
 import { useAutoAnimate } from '@formkit/auto-animate/react';
+import BroadcastAlertBanner, { BroadcastNotificationItem } from "@/components/common/BroadcastAlertBanner";
 
 type Location = Database['public']['Tables']['locations']['Row'];
 type Vehicle = Database['public']['Tables']['vehicles']['Row'];
@@ -13,6 +14,7 @@ type Vehicle = Database['public']['Tables']['vehicles']['Row'];
 interface HomeClientProps {
   locations: Location[];
   vehicles: Vehicle[];
+  initialBroadcasts?: BroadcastNotificationItem[];
 }
 
 type BookingResult = {
@@ -24,7 +26,7 @@ type BookingResult = {
   message?: string;
 };
 
-export default function HomeClient({ locations, vehicles }: HomeClientProps) {
+export default function HomeClient({ locations, vehicles, initialBroadcasts = [] }: HomeClientProps) {
   const [selectedBuses, setSelectedBuses] = useState<string[]>([]);
   const [selectedOccasion, setSelectedOccasion] = useState<string>('');
 
@@ -123,9 +125,11 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
   };
 
   return (
-    <main className="pt-0 font-sans text-[#191c1d]">
+    <main className="pt-20 font-sans text-[#191c1d]">
+      <BroadcastAlertBanner initialBroadcasts={initialBroadcasts} />
+
       {/* Hero Section with Map Gradient */}
-      <section className="relative min-h-[650px] lg:min-h-screen flex items-center justify-center overflow-hidden pt-16 pb-16">
+      <section className="relative min-h-[650px] lg:min-h-screen flex items-center justify-center overflow-hidden pt-6 pb-16">
         {/* Dynamic Gradient Background */}
         <div className="absolute inset-0 primary-gradient opacity-10"></div>
         <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, #00affe 0%, transparent 50%), radial-gradient(circle at 80% 80%, #004d40 0%, transparent 50%)" }}></div>
@@ -178,37 +182,62 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
                   </div>
                 </div>
               ) : ticketResult?.error ? (
-                <div className="p-8 bg-gradient-to-b from-[#f4fbf9] to-white rounded-3xl flex flex-col items-center text-center border border-[#e2f1ec] shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#00affe] to-[#006493]"></div>
-                  <div className="w-20 h-20 bg-[#e2f1ec] rounded-full flex items-center justify-center mb-5 shadow-inner">
-                    <span className="material-symbols-outlined text-4xl text-[#006493]">
-                      {ticketResult.error.includes('seats') || ticketResult.error.includes('schedules') ? 'event_busy' : 'error_outline'}
-                    </span>
-                  </div>
-                  <h3 className="text-2xl font-bold text-[#00342b] mb-3">
-                    {ticketResult.error.includes('seats') || ticketResult.error.includes('schedules') ? 'Fully Booked' : 'Search Update'}
-                  </h3>
-                  <p className="text-[#3f4945] text-base mb-8 px-2 sm:px-6 leading-relaxed">
-                    {ticketResult.error.includes('seats') ? "We couldn't find any buses with enough available seats for this route on your selected date." : 
-                     ticketResult.error.includes('schedules') ? "There are no buses scheduled for this route on your selected date." : 
-                     ticketResult.error}
-                    <br />
-                    <span className="text-sm mt-3 inline-block text-gray-500 font-medium">Don&apos;t worry, adjusting your date or route usually helps!</span>
-                  </p>
-                  
-                  <div className="flex flex-col sm:flex-row w-full gap-3 sm:px-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTicketResult(null)
-                        setSearchStep(0)
-                      }}
-                      className="bg-[#00affe] text-white px-6 py-3.5 rounded-xl font-bold shadow-md hover:bg-[#009ae0] hover:shadow-lg hover:-translate-y-0.5 transition-all w-full flex items-center justify-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">edit_calendar</span> Modify Search
-                    </button>
-                  </div>
-                </div>
+                (() => {
+                  const isDisrupted = ticketResult.error.includes('Service Paused') || 
+                                     ticketResult.error.includes('Service Suspended') ||
+                                     ticketResult.error.toLowerCase().includes('disruption') ||
+                                     ticketResult.error.toLowerCase().includes('suspended') ||
+                                     ticketResult.error.toLowerCase().includes('paused');
+
+                  return (
+                    <div className={`p-8 bg-gradient-to-b from-[#f4fbf9] to-white rounded-3xl flex flex-col items-center text-center border shadow-sm relative overflow-hidden ${
+                      isDisrupted ? 'border-amber-300' : 'border-[#e2f1ec]'
+                    }`}>
+                      <div className={`absolute top-0 left-0 w-full h-1.5 ${
+                        isDisrupted ? 'bg-gradient-to-r from-amber-500 to-red-500' : 'bg-gradient-to-r from-[#00affe] to-[#006493]'
+                      }`}></div>
+                      <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-5 shadow-inner ${
+                        isDisrupted ? 'bg-amber-100 text-amber-800' : 'bg-[#e2f1ec] text-[#006493]'
+                      }`}>
+                        <span className="material-symbols-outlined text-4xl">
+                          {isDisrupted ? 'warning' : ticketResult.error.includes('seats') || ticketResult.error.includes('schedules') ? 'event_busy' : 'error_outline'}
+                        </span>
+                      </div>
+                      <h3 className="text-2xl font-bold text-[#00342b] mb-3">
+                        {isDisrupted ? 'Service Notice' : ticketResult.error.includes('seats') || ticketResult.error.includes('schedules') ? 'Fully Booked' : 'Search Update'}
+                      </h3>
+                      <p className="text-[#3f4945] text-base mb-8 px-2 sm:px-6 leading-relaxed">
+                        {isDisrupted ? (
+                          <>
+                            <span className="font-semibold text-amber-950 block mb-2">{ticketResult.error}</span>
+                            <span className="text-xs text-gray-500 block">Our operators actively monitor regional route road conditions (such as monsoon flooding or landslides). Please check back later or choose another date.</span>
+                          </>
+                        ) : ticketResult.error.includes('seats') ? "We couldn't find any buses with enough available seats for this route on your selected date." : 
+                         ticketResult.error.includes('schedules') ? "There are no buses scheduled for this route on your selected date." : 
+                         ticketResult.error}
+                        {!isDisrupted && (
+                          <>
+                            <br />
+                            <span className="text-sm mt-3 inline-block text-gray-500 font-medium">Don&apos;t worry, adjusting your date or route usually helps!</span>
+                          </>
+                        )}
+                      </p>
+                      
+                      <div className="flex flex-col sm:flex-row w-full gap-3 sm:px-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTicketResult(null)
+                            setSearchStep(0)
+                          }}
+                          className="bg-[#00affe] text-white px-6 py-3.5 rounded-xl font-bold shadow-md hover:bg-[#009ae0] hover:shadow-lg hover:-translate-y-0.5 transition-all w-full flex items-center justify-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">edit_calendar</span> Modify Search
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()
               ) : ticketResult?.success ? (
                 <div className="p-6 bg-green-50 rounded-xl flex flex-col items-center text-center">
                   <h3 className="text-2xl font-bold text-green-800 mb-2">Booking Confirmed!</h3>
@@ -615,10 +644,17 @@ export default function HomeClient({ locations, vehicles }: HomeClientProps) {
               <p className="flex items-center justify-center md:justify-start gap-2"><span className="material-symbols-outlined text-[#006493]">location_on</span> Sribhumi, Barak Valley, Assam</p>
             </div>
           </div>
-          <div className="flex flex-col items-center justify-center">
+          <div className="flex flex-col items-center md:items-end gap-3">
             <div className="bg-white p-2 shadow-sm border border-[#e1e3e4] rounded-2xl">
               <Image src="/images/logo.jpeg" alt="Pather Saathi" width={180} height={120} className="object-contain w-[180px] h-auto rounded-xl" />
             </div>
+            <div className="flex items-center gap-6 text-sm font-semibold text-[#006493] mt-2">
+              <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
+              <Link href="/operator" className="hover:underline">Operator Portal</Link>
+            </div>
+            <p className="text-xs text-[#707975]">
+              © {new Date().getFullYear()} Pather Saathi. All rights reserved. Barak Valley, Assam.
+            </p>
           </div>
         </div>
       </footer>

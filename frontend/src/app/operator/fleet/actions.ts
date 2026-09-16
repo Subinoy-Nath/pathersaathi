@@ -197,7 +197,7 @@ export async function upsertRoute(formData: FormData) {
 }
 
 /**
- * Upsert a schedule. Validates vehicle ownership before insert.
+ * Upsert a single or repeating schedule manually. Validates vehicle ownership before insert.
  */
 export async function upsertSchedule(formData: FormData) {
   const supabase = await createClient()
@@ -291,4 +291,423 @@ export async function upsertSchedule(formData: FormData) {
   revalidatePath('/operator/fleet')
   revalidatePath('/operator')
   return { success: true }
+}
+
+/**
+ * Creates a recurring schedule template and immediately invokes rolling generation (14 days ahead).
+ */
+export async function createRecurringScheduleTemplate(formData: FormData) {
+  const supabase = await createClient()
+
+  // 1. Identity & role check
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { success: false, error: 'You must be logged in.' }
+  }
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'operator') {
+    return { success: false, error: 'Only operators can manage recurring schedule templates.' }
+  }
+
+  // 2. Extract inputs
+  const vehicle_id = (formData.get('vehicle_id') as string)?.trim()
+  const route_id = (formData.get('route_id') as string)?.trim()
+  let departure_time = (formData.get('departure_time') as string)?.trim()
+  const estimated_duration_mins_str = formData.get('estimated_duration_mins') as string
+  const base_fare_str = formData.get('base_fare') as string
+  const total_seats_str = formData.get('total_seats') as string
+  const default_driver_id = (formData.get('default_driver_id') as string)?.trim() || null
+
+  // Extract days of week (array of integers 0-6)
+  let days_of_week: number[] = []
+  const rawDays = formData.getAll('days_of_week')
+  if (rawDays.length > 0) {
+    days_of_week = rawDays
+      .map(d => parseInt(String(d)))
+      .filter(d => !isNaN(d) && d >= 0 && d <= 6)
+  } else {
+    const daysJson = formData.get('days_of_week') as string
+    if (daysJson) {
+      try {
+        const parsed = JSON.parse(daysJson)
+        if (Array.isArray(parsed)) {
+          days_of_week = parsed.map(Number).filter(d => !isNaN(d) && d >= 0 && d <= 6)
+        }
+      } catch {
+        days_of_week = daysJson
+          .split(',')
+          .map(s => parseInt(s.trim()))
+          .filter(d => !isNaN(d) && d >= 0 && d <= 6)
+      }
+    }
+  }
+
+  // Fallback if none selected: default to all days
+  if (days_of_week.length === 0) {
+    return { success: false, error: 'Please select at least one day of the week for the recurring schedule.' }
+  }
+
+  // Sort and remove duplicates
+  days_of_week = Array.from(new Set(days_of_week)).sort((a, b) => a - b)
+
+  // 3. Validation
+  if (!vehicle_id || !route_id || !departure_time || !estimated_duration_mins_str || !base_fare_str || !total_seats_str) {
+    return { success: false, error: 'All required fields must be provided.' }
+  }
+
+  // Normalize departure_time format (HH:MM or HH:MM:SS)
+  if (/^\d{1,2}:\d{2}$/.test(departure_time)) {
+    departure_time = `${departure_time}:00`
+  }
+  if (!/^\d{2}:\d{2}:\d{2}$/.test(departure_time)) {
+    return { success: false, error: 'Departure time must be in HH:MM format.' }
+  }
+
+  const estimated_duration_mins = parseInt(estimated_duration_mins_str)
+  if (isNaN(estimated_duration_mins) || estimated_duration_mins <= 0) {
+    return { success: false, error: 'Estimated duration must be a positive number of minutes.' }
+  }
+
+  const base_fare = parseFloat(base_fare_str)
+  if (isNaN(base_fare) || base_fare < 0) {
+    return { success: false, error: 'Base fare must be greater than or equal to 0.' }
+  }
+
+  // 4. Verify vehicle ownership
+  const { data: vehicle, error: vehicleError } = await supabase
+    .from('vehicles')
+    .select('owner_id, capacity_seats')
+    .eq('id', vehicle_id)
+    .single()
+
+  if (vehicleError || !vehicle || vehicle.owner_id !== user.id) {
+    return { success: false, error: 'You can only configure templates for vehicles you own.' }
+  }
+
+  const total_seats = parseInt(total_seats_str)
+  if (isNaN(total_seats) || total_seats < 1 || total_seats > vehicle.capacity_seats) {
+    return { success: false, error: `Total seats must be between 1 and vehicle capacity (${vehicle.capacity_seats}).` }
+  }
+
+  // 5. Insert into recurring_schedule_templates
+  const { data: template, error: insertError } = await supabase
+    .from('recurring_schedule_templates')
+    .insert({
+      operator_id: user.id,
+      vehicle_id,
+      route_id,
+      departure_time,
+      estimated_duration_mins,
+      days_of_week,
+      base_fare,
+      total_seats,
+      default_driver_id,
+      is_paused: false,
+    })
+    .select()
+    .single()
+
+  if (insertError) {
+    if (insertError.code === '23505') {
+      return { success: false, error: 'A recurring schedule template for this vehicle, route, and departure time already exists.' }
+    }
+    return { success: false, error: 'Failed to create template: ' + insertError.message }
+  }
+
+  // 6. Materialize rolling horizon departures (14 days ahead)
+  const { error: rpcError } = await supabase.rpc('generate_rolling_schedules', { p_days_ahead: 14 })
+  if (rpcError) {
+    console.error('generate_rolling_schedules warning:', rpcError)
+  }
+
+  revalidatePath('/operator/fleet')
+  revalidatePath('/operator')
+  return { success: true, template }
+}
+
+/**
+ * Toggles template pause/active status.
+ */
+export async function toggleTemplateStatus(templateId: string, isPaused?: boolean, pauseReason?: string) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { success: false, error: 'You must be logged in.' }
+  }
+
+  // Verify ownership
+  const { data: existing, error: fetchError } = await supabase
+    .from('recurring_schedule_templates')
+    .select('id, operator_id, is_paused')
+    .eq('id', templateId)
+    .single()
+
+  if (fetchError || !existing || existing.operator_id !== user.id) {
+    return { success: false, error: 'Template not found or unauthorized.' }
+  }
+
+  const nextPausedState = typeof isPaused === 'boolean' ? isPaused : !existing.is_paused
+
+  const { error: updateError } = await supabase
+    .from('recurring_schedule_templates')
+    .update({
+      is_paused: nextPausedState,
+      pause_reason: nextPausedState ? (pauseReason || 'Suspended by operator') : null,
+      paused_until: null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', templateId)
+
+  if (updateError) {
+    return { success: false, error: 'Failed to update template: ' + updateError.message }
+  }
+
+  // If resuming, materialize schedules
+  if (!nextPausedState) {
+    await supabase.rpc('generate_rolling_schedules', { p_days_ahead: 14 })
+  }
+
+  revalidatePath('/operator/fleet')
+  return { success: true, is_paused: nextPausedState }
+}
+
+/**
+ * Soft deletes a recurring schedule template.
+ */
+export async function deleteRecurringScheduleTemplate(templateId: string) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { success: false, error: 'You must be logged in.' }
+  }
+
+  // Verify ownership
+  const { data: existing, error: fetchError } = await supabase
+    .from('recurring_schedule_templates')
+    .select('id, operator_id')
+    .eq('id', templateId)
+    .single()
+
+  if (fetchError || !existing || existing.operator_id !== user.id) {
+    return { success: false, error: 'Template not found or unauthorized.' }
+  }
+
+  const { error: updateError } = await supabase
+    .from('recurring_schedule_templates')
+    .update({
+      deleted_at: new Date().toISOString()
+    })
+    .eq('id', templateId)
+
+  if (updateError) {
+    return { success: false, error: 'Failed to delete template: ' + updateError.message }
+  }
+
+  revalidatePath('/operator/fleet')
+  return { success: true }
+}
+
+/**
+ * Pauses a specific schedule departure run.
+ * Sets status to 'paused', records pause_reason, cancelled_at, and cancelled_by.
+ * Optionally creates an active public broadcast alert.
+ */
+export async function pauseScheduleRun(
+  scheduleId: string,
+  pauseReason: string,
+  createBroadcast: boolean = false,
+  customBroadcastMessage?: string
+) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { success: false, error: 'You must be logged in.' }
+  }
+
+  // 1. Fetch schedule and verify vehicle ownership
+  const { data: schedule, error: schedError } = await supabase
+    .from('schedules')
+    .select(`
+      id,
+      vehicle_id,
+      route_id,
+      departure_time,
+      arrival_time,
+      status,
+      vehicles ( owner_id, name ),
+      routes (
+        origin:locations!routes_origin_id_fkey ( name ),
+        destination:locations!routes_destination_id_fkey ( name )
+      )
+    `)
+    .eq('id', scheduleId)
+    .single()
+
+  if (schedError || !schedule) {
+    return { success: false, error: 'Schedule not found.' }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const vehicleData = schedule.vehicles as any
+  if (vehicleData?.owner_id !== user.id) {
+    return { success: false, error: 'Unauthorized: You do not own this vehicle or schedule.' }
+  }
+
+  if (schedule.status === 'completed' || schedule.status === 'cancelled') {
+    return { success: false, error: `Cannot pause a departure that is already ${schedule.status}.` }
+  }
+
+  const reason = pauseReason?.trim() || 'Service temporarily paused by operator'
+
+  // 2. Update schedule status to paused
+  const { error: updateError } = await supabase
+    .from('schedules')
+    .update({
+      status: 'paused',
+      pause_reason: reason,
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: user.id,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', scheduleId)
+
+  if (updateError) {
+    return { success: false, error: 'Failed to pause schedule: ' + updateError.message }
+  }
+
+  // 3. Create broadcast notification if requested
+  if (createBroadcast) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const routeData = schedule.routes as any
+    const originName = routeData?.origin?.name || 'Origin'
+    const destName = routeData?.destination?.name || 'Destination'
+    const depDate = schedule.departure_time ? new Date(schedule.departure_time) : null
+    const formattedTime = depDate ? depDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''
+
+    const title = `Service Suspended: ${originName} → ${destName}${formattedTime ? ` (${formattedTime})` : ''}`
+    const message = customBroadcastMessage?.trim() || reason
+
+    const { error: broadcastError } = await supabase
+      .from('broadcast_notifications')
+      .insert({
+        operator_id: user.id,
+        route_id: schedule.route_id,
+        vehicle_id: schedule.vehicle_id,
+        schedule_id: scheduleId,
+        alert_type: 'service_disruption',
+        severity: 'warning',
+        title,
+        message,
+        is_active: true,
+        starts_at: new Date().toISOString(),
+        expires_at: schedule.arrival_time || null
+      })
+
+    if (broadcastError) {
+      console.error('Warning: Failed to create broadcast notification:', broadcastError)
+    }
+  }
+
+  revalidatePath('/operator/fleet')
+  revalidatePath('/')
+  revalidatePath('/bookings')
+  return { success: true }
+}
+
+/**
+ * Resumes a previously paused schedule run.
+ * Sets status to 'scheduled', clears pause_reason and cancellation fields.
+ * Deactivates any associated broadcast notifications.
+ */
+export async function resumeScheduleRun(scheduleId: string) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { success: false, error: 'You must be logged in.' }
+  }
+
+  // 1. Fetch schedule and verify ownership
+  const { data: schedule, error: schedError } = await supabase
+    .from('schedules')
+    .select(`
+      id,
+      status,
+      vehicles ( owner_id )
+    `)
+    .eq('id', scheduleId)
+    .single()
+
+  if (schedError || !schedule) {
+    return { success: false, error: 'Schedule not found.' }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const vehicleData = schedule.vehicles as any
+  if (vehicleData?.owner_id !== user.id) {
+    return { success: false, error: 'Unauthorized: You do not own this vehicle or schedule.' }
+  }
+
+  // 2. Restore schedule status
+  const { error: updateError } = await supabase
+    .from('schedules')
+    .update({
+      status: 'scheduled',
+      pause_reason: null,
+      cancelled_at: null,
+      cancelled_by: null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', scheduleId)
+
+  if (updateError) {
+    return { success: false, error: 'Failed to resume schedule: ' + updateError.message }
+  }
+
+  // 3. Deactivate related broadcasts
+  const { error: broadcastUpdateError } = await supabase
+    .from('broadcast_notifications')
+    .update({
+      is_active: false,
+      updated_at: new Date().toISOString()
+    })
+    .eq('schedule_id', scheduleId)
+    .eq('operator_id', user.id)
+
+  if (broadcastUpdateError) {
+    console.error('Warning: Failed to deactivate broadcast notifications:', broadcastUpdateError)
+  }
+
+  revalidatePath('/operator/fleet')
+  revalidatePath('/')
+  revalidatePath('/bookings')
+  return { success: true }
+}
+
+/**
+ * Triggers rolling schedule generation for next 14 days manually.
+ */
+export async function triggerRollingSchedules() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, error: 'You must be logged in.' }
+  }
+
+  const { data, error } = await supabase.rpc('generate_rolling_schedules', { p_days_ahead: 14 })
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/operator/fleet')
+  return { success: true, result: data }
 }

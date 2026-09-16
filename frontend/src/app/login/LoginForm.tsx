@@ -26,6 +26,8 @@ function SubmitButton({ pendingText, children, className = "" }: { pendingText: 
 
 export default function LoginForm({ message, initialMode }: { message?: string; initialMode?: string }) {
   const [isLogin, setIsLogin] = useState(initialMode !== 'signup');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
 
 
 
@@ -111,17 +113,32 @@ export default function LoginForm({ message, initialMode }: { message?: string; 
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="login-password" className="block text-xs font-semibold text-[#3f4945] ml-1">Password</label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="login-password" className="block text-xs font-semibold text-[#3f4945] ml-1">Password</label>
+                  <Link href="/forgot-password" className="text-xs font-semibold text-[#006493] hover:underline">
+                    Forgot Password?
+                  </Link>
+                </div>
                 <div className="relative group">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#006493]/60">lock</span>
                   <input 
                     id="login-password"
                     name="password"
-                    className="w-full pl-10 pr-4 py-3 bg-white/60 border border-[#bfc9c4]/50 rounded-xl focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#006493] transition-all outline-none text-sm text-[#00342b] font-medium" 
+                    type={showLoginPassword ? 'text' : 'password'}
+                    className="w-full pl-10 pr-10 py-3 bg-white/60 border border-[#bfc9c4]/50 rounded-xl focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#006493] transition-all outline-none text-sm text-[#00342b] font-medium" 
                     placeholder="••••••••" 
-                    type="password"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3f4945] hover:text-[#00342b] transition"
+                    aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">
+                      {showLoginPassword ? 'visibility_off' : 'visibility'}
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -134,6 +151,23 @@ export default function LoginForm({ message, initialMode }: { message?: string; 
               <SubmitButton className="mt-6" pendingText="Signing In...">
                 Sign In
               </SubmitButton>
+
+              <div className="relative my-5">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#bfc9c4]/40"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-[#f2f4f5] px-2 text-[#707975] font-semibold text-[10px]">Or continue with</span>
+                </div>
+              </div>
+
+              <Link
+                href="/auth/magic-link"
+                className="w-full py-3 bg-white/80 hover:bg-white border border-[#bfc9c4]/50 rounded-xl font-semibold text-xs text-[#00342b] shadow-sm hover:shadow transition flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[18px] text-[#006493]">magic_button</span>
+                Sign in with Magic Link
+              </Link>
             </form>
           )}
 
@@ -192,16 +226,26 @@ export default function LoginForm({ message, initialMode }: { message?: string; 
                   <input 
                     id="signup-password"
                     name="password"
-                    className="w-full pl-10 pr-4 py-3 bg-white/60 border border-[#bfc9c4]/50 rounded-xl focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#006493] transition-all outline-none text-sm text-[#00342b] font-medium" 
+                    type={showSignupPassword ? 'text' : 'password'}
+                    className="w-full pl-10 pr-10 py-3 bg-white/60 border border-[#bfc9c4]/50 rounded-xl focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#006493] transition-all outline-none text-sm text-[#00342b] font-medium" 
                     placeholder="••••••••" 
-                    type="password"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowSignupPassword(!showSignupPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3f4945] hover:text-[#00342b] transition"
+                    aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">
+                      {showSignupPassword ? 'visibility_off' : 'visibility'}
+                    </span>
+                  </button>
                 </div>
               </div>
 
               <p className="text-[10px] text-[#3f4945] text-center px-4 pt-2 leading-relaxed">
-                By creating an account, you agree to Pather Saathi&apos;s <Link className="text-[#006493] font-semibold underline" href="#">Terms of Service</Link> and <Link className="text-[#006493] font-semibold underline" href="#">Privacy Policy</Link>.
+                By creating an account, you agree to Pather Saathi&apos;s <Link className="text-[#006493] font-semibold underline" href="/privacy">Terms of Service</Link> and <Link className="text-[#006493] font-semibold underline" href="/privacy">Privacy Policy</Link>.
               </p>
 
               {message && (

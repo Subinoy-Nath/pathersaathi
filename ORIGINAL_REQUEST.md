@@ -180,3 +180,47 @@ Verify all implemented steps locally using the full local Supabase stack and Nex
 ### [Verification]
 - [ ] Local dev server (`localhost:3000`) runs and serves all new pages and actions reliably.
 - [ ] Next.js build (`npm run build`) completes cleanly with 0 build or lint errors.
+
+## 2026-09-16T15:08:13Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Launched
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: Full team
+
+Resume the implementation of the Pather Saathi platform updates on the existing `feat/platform-enhancements-implementation` branch. M1, M2, and M3 are complete and committed. This final phase covers M4 (Auth Upgrades & Privacy Policy) and M5 (Verification).
+
+Working directory: /home/biswajyoti-nath/Projects/pathersaathi
+Integrity mode: development
+
+## Requirements
+
+### R1. Authentication & Security Upgrades (M4)
+Implement password reset/recovery, magic links, OTP/SMS interface abstractions, and the dedicated Privacy Policy page as specified in `docs/AUTH_AND_SECURITY_PLAN.md`.
+
+### R2. Local Supabase & Localhost Verification (M5)
+Verify all implemented steps locally using the full local Supabase stack and Next.js dev server (`localhost:3000`). Ensure `npm run build` succeeds without errors or warnings.
+
+## Acceptance Criteria
+
+### [DevOps & Branch Continuity]
+- [ ] All changes are committed to the existing `feat/platform-enhancements-implementation` branch.
+- [ ] `main` branch remains untouched.
+
+### [Feature Implementation]
+- [ ] Password reset and magic link flows work with Supabase Auth.
+- [ ] Privacy Policy page is fully accessible via routing.
+
+### [Verification]
+- [ ] Local dev server (`localhost:3000`) runs and serves all new pages and actions reliably.
+- [ ] Next.js build (`npm run build`) completes cleanly with 0 build or lint errors.
+
+## 2026-09-16T16:09:13Z
+
+USER UPDATE: The user just decided that since DLT requirements can't be met immediately, they want to keep the authentication flow *email-based / optional-based* for now as the primary method. You should keep the OTP route built, but hide it or mark it for future integration only. Make sure the primary login UI defaults to Email/Password or Magic Link, rather than defaulting to Mobile OTP. Adjust the implementation accordingly before you finalize M4!
+
+## 2026-09-16T16:10:16Z
+
+USER UPDATE 2: The user also requested that we add a "view password" (eye icon toggle) option on the login page. Please ensure the password input fields in `LoginForm.tsx` (and `ResetPasswordForm.tsx` if applicable) have a toggle to show/hide the password text.
+

@@ -142,6 +142,10 @@ export default function Navbar({ user, role }: NavbarProps) {
                 </Link>
               </>
             )}
+            <Link onClick={() => setIsMenuOpen(false)} href="/privacy" className="text-2xl font-bold text-[#3f4945] hover:text-[#00affe] transition-colors flex items-center gap-2 pt-1">
+              <span className="material-symbols-outlined text-[22px] text-[#006493]">shield</span>
+              Privacy Policy
+            </Link>
             {!user && (
               <div className="flex-1 flex flex-col items-center justify-center text-center opacity-80 mt-8 mb-4">
                 <div className="w-32 h-32 bg-gradient-to-br from-[#e2f1ec] to-white rounded-full flex items-center justify-center mb-6 shadow-inner border border-white/60">

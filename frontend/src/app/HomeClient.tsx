@@ -473,28 +473,33 @@ export default function HomeClient({ locations, vehicles, initialBroadcasts = []
               </div>
             )}
 
-            <div className="col-span-1 md:col-span-2 flex justify-between items-center pt-4 border-t border-black/5 mt-2">
-              <p className="text-sm font-semibold text-[#3f4945]">
-                {selectedBuses.length === 0 ? 'No buses selected' : `${selectedBuses.length} bus${selectedBuses.length > 1 ? 'es' : ''} selected`}
-              </p>
-              <button
-                type="submit"
-                disabled={busLoading || selectedBuses.length === 0}
-                className="button-gradient text-white px-8 py-3 rounded-xl font-semibold hover:opacity-90 transition disabled:opacity-40 shadow-md flex items-center justify-center gap-2"
-              >
-                {busLoading ? (
-                  <>
-                    <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                    Booking...
-                  </>
-                ) : (
-                  'Request Charter'
-                )}
-              </button>
+            {/* Removed Static Inline Button as requested */}
+
+            {/* Smooth Sliding Floating Bar */}
+            <div className={`fixed bottom-0 left-0 w-full bg-white shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] border-t border-gray-100 p-4 md:p-6 z-[100] flex justify-between items-center transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${selectedBuses.length > 0 ? 'translate-y-0' : 'translate-y-full'}`}>
+              <div className="max-w-7xl mx-auto w-full flex justify-between items-center">
+                <p className="text-sm md:text-base font-semibold text-[#3f4945]">
+                  {selectedBuses.length} bus{selectedBuses.length > 1 ? 'es' : ''} selected
+                </p>
+                <button
+                  type="submit"
+                  disabled={busLoading || selectedBuses.length === 0}
+                  className="button-gradient text-white px-6 py-3 md:px-10 md:py-4 rounded-xl font-bold hover:opacity-90 transition shadow-xl flex items-center justify-center gap-2 text-sm md:text-base hover:scale-105 active:scale-95"
+                >
+                  {busLoading ? (
+                    <>
+                      <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                      Booking...
+                    </>
+                  ) : (
+                    'Request Charter'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-32">
             {vehicles.map((bus) => {
               const selected = selectedBuses.includes(bus.id);
               return (
@@ -633,31 +638,6 @@ export default function HomeClient({ locations, vehicles, initialBroadcasts = []
           </div>
         </div>
       </section>
-
-      <footer className="bg-[#f8fafb] text-[#191c1d] px-5 lg:px-10 py-8 md:py-10 border-t border-[#d8dadb]">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-10">
-          <div className="flex flex-col items-center md:items-start">
-            <h2 className="text-2xl font-bold mb-4 text-[#00342b]">Contact Us</h2>
-            <div className="space-y-3 text-[#3f4945] text-sm font-medium">
-              <p className="flex items-center justify-center md:justify-start gap-2"><span className="material-symbols-outlined text-[#006493]">mail</span> support@pathersaathi.in</p>
-              <p className="flex items-center justify-center md:justify-start gap-2"><span className="material-symbols-outlined text-[#006493]">call</span> +91 6002089037</p>
-              <p className="flex items-center justify-center md:justify-start gap-2"><span className="material-symbols-outlined text-[#006493]">location_on</span> Sribhumi, Barak Valley, Assam</p>
-            </div>
-          </div>
-          <div className="flex flex-col items-center md:items-end gap-3">
-            <div className="bg-white p-2 shadow-sm border border-[#e1e3e4] rounded-2xl">
-              <Image src="/images/logo.jpeg" alt="Pather Saathi" width={180} height={120} className="object-contain w-[180px] h-auto rounded-xl" />
-            </div>
-            <div className="flex items-center gap-6 text-sm font-semibold text-[#006493] mt-2">
-              <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
-              <Link href="/operator" className="hover:underline">Operator Portal</Link>
-            </div>
-            <p className="text-xs text-[#707975]">
-              © {new Date().getFullYear()} Pather Saathi. All rights reserved. Barak Valley, Assam.
-            </p>
-          </div>
-        </div>
-      </footer>
     </main>
   );
 }

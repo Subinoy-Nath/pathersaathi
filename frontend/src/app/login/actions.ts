@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { normalizeIndianPhoneNumber } from '@/utils/phone'
 
 export async function login(formData: FormData) {
   const supabase = await createClient()
@@ -31,26 +32,11 @@ export async function signup(formData: FormData) {
   const phone_raw = formData.get('phone_number') as string
 
   // Phone Validation and Normalization
-  let phone_number = phone_raw.trim().replace(/\s+/g, '')
-  
-  if (!phone_number) {
-    redirect('/login?mode=signup&message=Phone number is required')
+  const phoneResult = normalizeIndianPhoneNumber(phone_raw)
+  if (!phoneResult.valid) {
+    redirect(`/login?mode=signup&message=${encodeURIComponent(phoneResult.error || 'Invalid phone number')}`)
   }
-
-  // Ensure it starts with +91 if not provided (assuming India for this MVP)
-  if (!phone_number.startsWith('+')) {
-    if (phone_number.length === 10) {
-      phone_number = `+91${phone_number}`
-    } else {
-      phone_number = `+${phone_number}`
-    }
-  }
-
-  // Very basic regex validation for E.164-ish format
-  const phoneRegex = /^\+[1-9]\d{1,14}$/
-  if (!phoneRegex.test(phone_number)) {
-    redirect('/login?mode=signup&message=Invalid phone number format. Use +91XXXXXXXXXX')
-  }
+  const phone_number = phoneResult.normalized
 
   if (!name || name.trim().length < 2) {
     redirect('/login?mode=signup&message=Name is required and must be at least 2 characters')

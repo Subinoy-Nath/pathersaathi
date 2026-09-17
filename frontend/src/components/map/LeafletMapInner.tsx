@@ -67,11 +67,15 @@ export default function LeafletMapInner({
       attributionControl: true
     })
 
-    // OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // OpenStreetMap tiles with network failure resilience
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map)
+    })
+    tileLayer.on('tileerror', () => {
+      // Gracefully handle tile loading failures without uncaught exceptions
+    })
+    tileLayer.addTo(map)
 
     mapInstanceRef.current = map
 
@@ -305,7 +309,7 @@ export default function LeafletMapInner({
       <div className="absolute bottom-4 left-4 z-[500] bg-[#001712]/90 backdrop-blur-md border border-[#00E676]/30 px-3 py-1.5 rounded-full flex items-center gap-2 text-xs text-white shadow-lg">
         <span className={`w-2.5 h-2.5 rounded-full ${isLive ? 'bg-[#00E676] animate-pulse' : 'bg-[#FFB300]'}`} />
         <span className="font-mono font-semibold">
-          {isLive ? 'GPS ACTIVE' : 'SIGNAL PAUSED'}
+          {!currentLocation ? 'NO GPS FIX' : isLive ? 'GPS ACTIVE' : 'SIGNAL PAUSED'}
         </span>
         {currentLocation?.speed !== undefined && currentLocation?.speed !== null && (
           <span className="text-[#00E676] font-mono border-l border-white/20 pl-2">

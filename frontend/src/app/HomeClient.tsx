@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Database } from '@/types/database.types';
-import { createTicketBooking, createWholeVehicleBooking, searchSchedules } from "./actions";
+import { createTicketBooking, createWholeVehicleBooking, searchSchedules, getTodaySchedules, TodayScheduleItem } from "./actions";
+import { createClient } from "@/utils/supabase/client";
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import BroadcastAlertBanner, { BroadcastNotificationItem } from "@/components/common/BroadcastAlertBanner";
 
@@ -15,6 +16,9 @@ interface HomeClientProps {
   locations: Location[];
   vehicles: Vehicle[];
   initialBroadcasts?: BroadcastNotificationItem[];
+  initialUser?: { id: string; email?: string } | null;
+  initialTodaySchedules?: TodayScheduleItem[];
+  initialTab?: 'book' | 'track';
 }
 
 type BookingResult = {
@@ -26,7 +30,36 @@ type BookingResult = {
   message?: string;
 };
 
-export default function HomeClient({ locations, vehicles, initialBroadcasts = [] }: HomeClientProps) {
+export default function HomeClient({
+  locations,
+  vehicles,
+  initialBroadcasts = [],
+  initialUser = null,
+  initialTodaySchedules = [],
+  initialTab = 'book'
+}: HomeClientProps) {
+  const [currentUser, setCurrentUser] = useState<{ id: string; email?: string } | null>(initialUser || null);
+  const [todaySchedules, setTodaySchedules] = useState<TodayScheduleItem[]>(initialTodaySchedules || []);
+  const [trackLoading, setTrackLoading] = useState(false);
+  const [heroTab, setHeroTab] = useState<'book' | 'track'>(initialTab);
+  const currentUserRef = useRef<{ id: string; email?: string } | null>(initialUser || null);
+
+  const switchHeroTab = (tab: 'book' | 'track') => {
+    setHeroTab(tab);
+    if (tab === 'track' && currentUserRef.current && (!todaySchedules || todaySchedules.length === 0)) {
+      refreshTodaySchedules();
+    }
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (tab === 'track') {
+        url.searchParams.set('tab', 'track');
+      } else {
+        url.searchParams.delete('tab');
+      }
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  };
+
   const [selectedBuses, setSelectedBuses] = useState<string[]>([]);
   const [selectedOccasion, setSelectedOccasion] = useState<string>('');
 
@@ -52,9 +85,101 @@ export default function HomeClient({ locations, vehicles, initialBroadcasts = []
   const [busResult, setBusResult] = useState<BookingResult | null>(null);
 
   const busesRef = useRef<HTMLElement | null>(null);
+  const heroCardRef = useRef<HTMLDivElement | null>(null);
   const [parent] = useAutoAnimate();
 
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setCurrentUser({ id: user.id, email: user.email });
+        currentUserRef.current = { id: user.id, email: user.email };
+        if (todaySchedules.length === 0) {
+          getTodaySchedules().then((res) => {
+            if (res.success && res.schedules) {
+              setTodaySchedules(res.schedules);
+            }
+          });
+        }
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user;
+      if (u) {
+        const loggedUser = { id: u.id, email: u.email };
+        setCurrentUser(loggedUser);
+        currentUserRef.current = loggedUser;
+        getTodaySchedules().then((res) => {
+          if (res.success && res.schedules) {
+            setTodaySchedules(res.schedules);
+          }
+        });
+      } else {
+        setCurrentUser(null);
+        currentUserRef.current = null;
+        setTodaySchedules([]);
+      }
+    });
+
+    // Subscribe to realtime changes on schedules table so hero section updates live
+    const channelName = `home-today-schedules-${Date.now()}`;
+    const schedulesChannel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'schedules'
+        },
+        () => {
+          // Guard: Only query server action if user is authenticated
+          if (currentUserRef.current) {
+            getTodaySchedules().then((res) => {
+              if (res.success && res.schedules) {
+                setTodaySchedules(res.schedules);
+              }
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(schedulesChannel);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const refreshTodaySchedules = async () => {
+    setTrackLoading(true);
+    try {
+      const res = await getTodaySchedules();
+      if (res.success && res.schedules) {
+        setTodaySchedules(res.schedules);
+      }
+    } catch (err) {
+      console.error('Failed to refresh today schedules:', err);
+    } finally {
+      setTrackLoading(false);
+    }
+  };
+
+  const handleHeroTrackCta = () => {
+    switchHeroTab('track');
+    if (typeof window !== 'undefined' && window.innerWidth < 1024 && heroCardRef.current) {
+      heroCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const toggleBusSelection = (busId: string) => {
+
     setSelectedBuses((prev) =>
       prev.includes(busId)
         ? prev.filter((id) => id !== busId)
@@ -156,22 +281,259 @@ export default function HomeClient({ locations, vehicles, initialBroadcasts = []
                 <span className="text-sm lg:text-base font-semibold text-[#00342b]">24/7 Support</span>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={scrollToBuses}
-              className="group mt-2 px-10 py-4 rounded-full border-2 border-[#006493] text-[#006493] font-bold text-base lg:text-lg hover:bg-[#006493] hover:text-white transition-all duration-300 shadow-sm flex items-center justify-center gap-2"
-            >
-              Book a Whole Bus <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start pt-2">
+              <button
+                type="button"
+                onClick={scrollToBuses}
+                className="group px-8 py-3.5 rounded-full border-2 border-[#006493] text-[#006493] font-bold text-base hover:bg-[#006493] hover:text-white transition-all duration-300 shadow-sm flex items-center justify-center gap-2"
+              >
+                Book a Whole Bus <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleHeroTrackCta}
+                className="px-8 py-3.5 rounded-full bg-[#004d40] text-white font-bold text-base hover:bg-[#00382d] transition-all duration-300 shadow-md flex items-center justify-center gap-2.5"
+                data-testid="hero-track-live-cta"
+              >
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00E676] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00E676]"></span>
+                </span>
+                Track Bus Live
+              </button>
+            </div>
           </div>
 
           {/* Floating Booking Card */}
-          <div className="glass p-8 rounded-3xl border border-white/50 luminous-shadow relative w-full max-w-xl mx-auto">
-            <div className="absolute -top-4 -right-4 bg-[#00affe] text-[#003f5f] px-4 py-1 rounded-full text-xs font-bold shadow-lg uppercase tracking-wider">
-              Pre-book & Save
+          <div ref={heroCardRef} className="glass p-8 rounded-3xl border border-white/50 luminous-shadow relative w-full max-w-xl mx-auto">
+            {heroTab === 'track' ? (
+              <div className="absolute -top-4 -right-4 bg-emerald-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg uppercase tracking-wider flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+                Live Radar
+              </div>
+            ) : (
+              <div className="absolute -top-4 -right-4 bg-[#00affe] text-[#003f5f] px-4 py-1 rounded-full text-xs font-bold shadow-lg uppercase tracking-wider">
+                Pre-book & Save
+              </div>
+            )}
+
+            {/* Mode Switcher: Book Tickets vs Track Bus Live */}
+            <div className="flex items-center gap-1.5 p-1 bg-[#f0f4f3] rounded-2xl mb-6 border border-[#e0e8e5]">
+              <button
+                type="button"
+                onClick={() => switchHeroTab('book')}
+                className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                  heroTab === 'book'
+                    ? 'bg-white text-[#00342b] shadow-sm'
+                    : 'text-[#3f4945] hover:text-[#00342b]'
+                }`}
+                data-testid="hero-tab-book"
+              >
+                <span className="material-symbols-outlined text-[18px]">confirmation_number</span>
+                Book Tickets
+              </button>
+              <button
+                type="button"
+                onClick={() => switchHeroTab('track')}
+                className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                  heroTab === 'track'
+                    ? 'bg-white text-[#00342b] shadow-sm'
+                    : 'text-[#3f4945] hover:text-[#00342b]'
+                }`}
+                data-testid="track-bus-live-tab"
+              >
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00E676] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00E676]"></span>
+                </span>
+                Track Bus Live
+              </button>
             </div>
+
             <div ref={parent} className="space-y-6">
-              {ticketResult?.error && ticketResult.error === 'AUTH_REQUIRED' ? (
+              {heroTab === 'track' ? (
+                /* Track Bus Live Panel */
+                !currentUser ? (
+                  <div className="p-6 bg-[#004d40]/5 border border-[#004d40]/10 rounded-2xl flex flex-col items-center text-center shadow-sm">
+                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm text-[#006493]">
+                      <span className="material-symbols-outlined text-3xl">near_me</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-[#00342b] mb-1">Live Bus Radar</h3>
+                    <p className="text-[#3f4945] text-sm mb-5 max-w-sm">
+                      Log in to track all active buses across Silchar and Barak Valley in real time. Open tracking is available to all users with no booking needed!
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                      <Link href="/login" className="bg-[#00affe] text-white px-6 py-2.5 rounded-xl font-bold shadow-sm hover:bg-[#009ae0] transition text-center w-full sm:w-auto">
+                        Log In to Track
+                      </Link>
+                      <Link href="/login?mode=signup" className="bg-white text-[#006493] border-2 border-[#006493]/20 px-6 py-2.5 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition text-center w-full sm:w-auto">
+                        Create Account
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4" data-testid="track-bus-live-panel">
+                    <div className="flex items-center justify-between pb-1 border-b border-gray-100">
+                      <div>
+                        <h3 className="text-lg font-bold text-[#00342b] flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[#006493] text-[20px]">radar</span>
+                          Today&apos;s Active Runs
+                        </h3>
+                        <p className="text-xs text-[#3f4945]">
+                          Track any daily departure in real-time without needing a booking.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={refreshTodaySchedules}
+                        disabled={trackLoading}
+                        className="text-xs text-[#006493] hover:underline font-semibold flex items-center gap-1 px-2 py-1 rounded hover:bg-black/5 transition"
+                        title="Refresh active runs"
+                      >
+                        <span className={`material-symbols-outlined text-[16px] ${trackLoading ? 'animate-spin' : ''}`}>
+                          refresh
+                        </span>
+                        <span>Refresh</span>
+                      </button>
+                    </div>
+
+                    {trackLoading ? (
+                      <div className="p-8 flex flex-col items-center justify-center text-center">
+                        <div className="w-8 h-8 border-3 border-[#006493]/20 border-t-[#006493] rounded-full animate-spin mb-3" />
+                        <p className="text-xs font-bold text-[#00342b]">Fetching today&apos;s departures...</p>
+                      </div>
+                    ) : todaySchedules.length === 0 ? (
+                      <div className="p-8 bg-[#f8fafb] rounded-2xl border border-[#e1e3e4] text-center space-y-3">
+                        <span className="material-symbols-outlined text-4xl text-gray-400">directions_bus</span>
+                        <h4 className="font-bold text-[#00342b] text-base">No Runs Scheduled for Today Yet</h4>
+                        <p className="text-xs text-[#3f4945] max-w-sm mx-auto leading-relaxed">
+                          Operators configure rolling daily departures. Please check back shortly or search upcoming dates.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => switchHeroTab('book')}
+                          className="mt-2 text-xs font-bold text-[#006493] hover:underline inline-flex items-center gap-1"
+                        >
+                          Search &amp; Book Upcoming Trips &rarr;
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar" data-testid="today-schedules-list">
+                        {todaySchedules.map((schedule) => {
+                          const origin = schedule.routes?.origin?.name || 'Silchar';
+                          const dest = schedule.routes?.destination?.name || 'Sribhumi';
+                          const busName = schedule.vehicles?.name || 'Transit Coach';
+                          const regNo = schedule.vehicles?.registration_number;
+                          const depDate = new Date(schedule.departure_time);
+                          const depTimeStr = !isNaN(depDate.getTime())
+                            ? depDate.toLocaleTimeString('en-IN', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true,
+                                timeZone: 'Asia/Kolkata'
+                              })
+                            : schedule.departure_time;
+                          const isLive = schedule.status === 'in_transit';
+                          const isBoarding = schedule.status === 'boarding';
+                          const isPaused = schedule.status === 'paused';
+
+                          return (
+                            <div
+                              key={schedule.id}
+                              className={`bg-white/90 border p-4 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col gap-3 ${
+                                isLive
+                                  ? 'border-[#00E676] ring-1 ring-[#00E676]/40'
+                                  : isPaused
+                                  ? 'border-rose-200 bg-rose-50/20'
+                                  : 'border-gray-200'
+                              }`}
+                              data-testid={`schedule-card-${schedule.id}`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-[#00342b] text-base">{busName}</span>
+                                    {regNo && (
+                                      <span className="text-[10px] font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                                        {regNo}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-sm font-semibold text-[#00342b] mt-1">
+                                    <span>{origin}</span>
+                                    <span className="text-[#00affe] material-symbols-outlined text-[14px]">arrow_forward</span>
+                                    <span>{dest}</span>
+                                  </div>
+                                </div>
+
+                                {/* Status Badge */}
+                                <div>
+                                  {isLive ? (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#e8f5e9] text-[#2e7d32] border border-[#a5d6a7]">
+                                      <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00E676] opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00E676]"></span>
+                                      </span>
+                                      LIVE
+                                    </span>
+                                  ) : isBoarding ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                      Boarding
+                                    </span>
+                                  ) : isPaused ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                      Paused
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                      Scheduled
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {schedule.pause_reason && (
+                                <div className="text-[11px] bg-amber-50 text-amber-900 border border-amber-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
+                                  <span className="material-symbols-outlined text-[14px] text-amber-700 shrink-0">info</span>
+                                  <span className="truncate">{schedule.pause_reason}</span>
+                                </div>
+                              )}
+
+                              <div className="flex items-center justify-between pt-1 border-t border-gray-100 text-xs text-[#3f4945]">
+                                <div className="flex items-center gap-1 font-medium">
+                                  <span className="material-symbols-outlined text-[14px] text-[#006493]">schedule</span>
+                                  <span>Departs: <strong className="text-[#00342b]">{depTimeStr}</strong></span>
+                                </div>
+                                <div className={`font-medium ${schedule.available_seats > 0 ? 'text-green-700' : 'text-rose-600'}`}>
+                                  {schedule.available_seats > 0 ? `${schedule.available_seats} seats free` : 'Bus Full (Tracking Open)'}
+                                </div>
+                              </div>
+
+                              {/* Action Button: Route to /bookings/track/[scheduleId] */}
+                              <Link
+                                href={`/bookings/track/${schedule.id}`}
+                                className="w-full bg-[#004d40] hover:bg-[#00382d] text-white py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm shadow-sm hover:shadow transition-all flex items-center justify-center gap-1.5 group"
+                                data-testid={`track-button-${schedule.id}`}
+                              >
+                                <span className="material-symbols-outlined text-[16px] text-[#00affe] group-hover:scale-110 transition-transform">
+                                  near_me
+                                </span>
+                                Track Bus Live
+                                <span className="material-symbols-outlined text-[14px] group-hover:translate-x-0.5 transition-transform">
+                                  arrow_forward
+                                </span>
+                              </Link>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              ) : ticketResult?.error && ticketResult.error === 'AUTH_REQUIRED' ? (
                 <div className="p-6 bg-[#004d40]/5 border border-[#004d40]/10 rounded-2xl flex flex-col items-center text-center shadow-sm">
                   <span className="material-symbols-outlined text-4xl text-[#006493] mb-2">account_circle</span>
                   <h3 className="text-xl font-bold text-[#00342b] mb-2">Almost there!</h3>

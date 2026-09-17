@@ -224,3 +224,31 @@ USER UPDATE: The user just decided that since DLT requirements can't be met imme
 
 USER UPDATE 2: The user also requested that we add a "view password" (eye icon toggle) option on the login page. Please ensure the password input fields in `LoginForm.tsx` (and `ResetPasswordForm.tsx` if applicable) have a toggle to show/hide the password text.
 
+## 2026-09-17T15:14:49Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Launched
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: Small, focused team
+
+This is a single self-contained feature; keep it small and focused.
+Add a "Track Bus Live" feature to the hero section so that any logged-in user can track any active bus trip, regardless of whether they have a booking for it.
+
+Working directory: /home/biswajyoti-nath/Projects/pathersaathi
+Integrity mode: development
+
+## Requirements
+
+### R1. Track Any Daily Bus (Smart UI Merge)
+Add functionality to the hero section for logged-in users to track buses. The system already has a nightly cron job that generates recurring schedules 14 days in advance. Smartly merge this into the UI by fetching and displaying **today's** available/active runs directly on the hero section.
+
+### R2. Open Tracking Access
+A user must be able to track a bus even if they have not booked a ticket for it. Clicking to track should route them to the live tracking view for that schedule.
+
+## Acceptance Criteria
+
+### Verification
+- [ ] A programmatic test or script verifies that a logged-in user (without bookings) can fetch today's schedules in the hero section.
+- [ ] The test verifies that clicking the track button for a schedule routes the user to the `/bookings/track/[scheduleId]` page successfully.
+- [ ] The feature is fully functional in the browser without breaking existing booking flows.

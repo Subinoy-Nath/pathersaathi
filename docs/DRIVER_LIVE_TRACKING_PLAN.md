@@ -1399,3 +1399,30 @@ SELECT cron.schedule(
 ---
 
 *End of Authoritative Plan — Requirement R2: Driver Live Tracking Architecture.*
+
+## 7. Passenger Tracking UX Update: Login-Gated Homepage Flow
+
+Based on updated product requirements, live tracking will now be surfaced directly on the public homepage to drive engagement, but accessing the actual map data remains strictly **login-gated**.
+
+### 7.1 The "Hero Section" Entry Point
+- **Location:** In the main Hero banner, adjacent to the existing `[Book a Whole Bus]` primary action.
+- **Component:** A new button labeled `[ 📡 Track Live Buses ]` (or similar).
+- **Action:** Clicking this button does *not* immediately demand a login. Instead, it smoothly scrolls the user down to (or opens a modal for) an "Available Live Buses" grid.
+
+### 7.2 The Selection Grid
+- The grid displays currently active buses or upcoming schedules.
+- Users can freely browse which buses are en-route.
+- **The Trigger:** When the user clicks on a specific bus card to view its live map...
+
+### 7.3 The Authentication Gate
+At the moment the user clicks a bus to track it, the system checks the Supabase authentication state.
+- **If Logged In (Authenticated):** 
+  - The Live Tracking Map (Leaflet) component opens smoothly, pulling the active `scheduleId`.
+- **If Logged Out (Unauthenticated):**
+  - The map does *not* load.
+  - A custom, beautifully designed modal intercepts the action:
+    *"To view the live GPS location of this bus and ensure passenger safety, please log in to your Pather Saathi account."*
+  - The modal provides buttons to `[Log In]` or `[Create Account]`.
+  - Clicking these buttons pushes the user to `/login` with a `?redirect=/track/[scheduleId]` parameter, so once they log in, they are immediately bounced back to the exact bus map they wanted to see.
+
+This flow maximizes public SEO and engagement (letting people see that tracking *exists*) while enforcing data privacy and driving user registrations through a high-value gate.

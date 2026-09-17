@@ -12,54 +12,58 @@ export interface LiveLocationData {
   recorded_at: string
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export function useLiveBusTracking(scheduleId: string) {
+  const isValidUuid = Boolean(scheduleId && UUID_REGEX.test(scheduleId))
   const [currentLocation, setCurrentLocation] = useState<LiveLocationData | null>(null)
   const [historyCoordinates, setHistoryCoordinates] = useState<Array<[number, number]>>([])
   const [isLive, setIsLive] = useState<boolean>(false)
-  const [secondsSinceLastPing, setSecondsSinceLastPing] = useState<number>(0)
+  const [secondsSinceLastPing, setSecondsSinceLastPing] = useState<number>(-1)
   const [tripStatus, setTripStatus] = useState<string>('scheduled')
-  const [loading, setLoading] = useState<boolean>(true)
+  const [pauseReason, setPauseReason] = useState<string | null>(null)
+  const [loading, setLoading] = useState<boolean>(isValidUuid)
 
   const supabase = createClient()
   const lastPingTimeRef = useRef<number>(0)
 
   useEffect(() => {
-    if (!scheduleId) return
+    if (!isValidUuid) return
     let isMounted = true
-    if (lastPingTimeRef.current === 0) {
-      lastPingTimeRef.current = Date.now()
-    }
 
     const fetchInitialData = async () => {
       try {
-
-        // 1. Fetch current schedule status
+        // 1. Fetch current schedule status and pause reason
         const { data: scheduleData } = await supabase
           .from('schedules')
-          .select('status')
+          .select('status, pause_reason')
           .eq('id', scheduleId)
           .single()
 
         if (scheduleData && isMounted) {
           setTripStatus(scheduleData.status)
+          if (scheduleData.pause_reason !== undefined) {
+            setPauseReason(scheduleData.pause_reason)
+          }
         }
 
-        // 2. Fetch recent trip locations trail (last 30 coordinates)
+        // 2. Fetch the most recent trip locations trail (latest 50 coordinates in descending order, then reversed)
         const { data: recentLocations } = await supabase
           .from('trip_locations')
           .select('latitude, longitude, speed, heading, accuracy, recorded_at')
           .eq('schedule_id', scheduleId)
-          .order('recorded_at', { ascending: true })
+          .order('recorded_at', { ascending: false })
           .limit(50)
 
         if (recentLocations && recentLocations.length > 0 && isMounted) {
-          const trail: Array<[number, number]> = recentLocations.map(pt => [pt.latitude, pt.longitude])
+          const chronological = [...recentLocations].reverse()
+          const trail: Array<[number, number]> = chronological.map(pt => [pt.latitude, pt.longitude])
           setHistoryCoordinates(trail)
 
-          const latest = recentLocations[recentLocations.length - 1]
+          const latest = chronological[chronological.length - 1]
           setCurrentLocation(latest)
           lastPingTimeRef.current = new Date(latest.recorded_at).getTime()
-          const diff = Math.round((Date.now() - lastPingTimeRef.current) / 1000)
+          const diff = Math.max(0, Math.round((Date.now() - lastPingTimeRef.current) / 1000))
           setSecondsSinceLastPing(diff)
           setIsLive(diff <= 60)
         }
@@ -75,8 +79,9 @@ export function useLiveBusTracking(scheduleId: string) {
     fetchInitialData()
 
     // 3. Realtime subscription to trip_locations and schedule updates
+    const channelName = `live-bus-${scheduleId}-${Date.now()}`
     const channel = supabase
-      .channel(`live-bus-${scheduleId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -110,6 +115,9 @@ export function useLiveBusTracking(scheduleId: string) {
           if (updated?.status) {
             setTripStatus(updated.status)
           }
+          if ('pause_reason' in (updated || {})) {
+            setPauseReason(updated.pause_reason || null)
+          }
         }
       )
       .subscribe((status) => {
@@ -121,6 +129,11 @@ export function useLiveBusTracking(scheduleId: string) {
     // 4. Heartbeat ticker tracking seconds since last ping
     const intervalId = setInterval(() => {
       if (!isMounted) return
+      if (lastPingTimeRef.current === 0) {
+        setSecondsSinceLastPing(-1)
+        setIsLive(false)
+        return
+      }
       const diffSecs = Math.max(0, Math.round((Date.now() - lastPingTimeRef.current) / 1000))
       setSecondsSinceLastPing(diffSecs)
 
@@ -134,7 +147,7 @@ export function useLiveBusTracking(scheduleId: string) {
       clearInterval(intervalId)
       supabase.removeChannel(channel)
     }
-  }, [scheduleId, supabase])
+  }, [scheduleId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     currentLocation,
@@ -142,6 +155,7 @@ export function useLiveBusTracking(scheduleId: string) {
     isLive,
     secondsSinceLastPing,
     tripStatus,
+    pauseReason,
     loading
   }
 }

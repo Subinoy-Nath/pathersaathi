@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       booking_events: {
@@ -108,13 +133,11 @@ export type Database = {
           created_at: string
           customer_id: string
           deleted_at: string | null
-          end_date: string | null
           id: string
           occasion: string | null
           operator_notes: string | null
           schedule_id: string | null
           seats_requested: number | null
-          start_date: string | null
           status: string
           total_price: number | null
           travel_date: string
@@ -126,13 +149,11 @@ export type Database = {
           created_at?: string
           customer_id: string
           deleted_at?: string | null
-          end_date?: string | null
           id?: string
           occasion?: string | null
           operator_notes?: string | null
           schedule_id?: string | null
           seats_requested?: number | null
-          start_date?: string | null
           status?: string
           total_price?: number | null
           travel_date: string
@@ -144,13 +165,11 @@ export type Database = {
           created_at?: string
           customer_id?: string
           deleted_at?: string | null
-          end_date?: string | null
           id?: string
           occasion?: string | null
           operator_notes?: string | null
           schedule_id?: string | null
           seats_requested?: number | null
-          start_date?: string | null
           status?: string
           total_price?: number | null
           travel_date?: string
@@ -295,6 +314,7 @@ export type Database = {
           pause_reason: string | null
           paused_until: string | null
           route_id: string
+          station_times: Json | null
           total_seats: number
           updated_at: string
           vehicle_id: string
@@ -313,6 +333,7 @@ export type Database = {
           pause_reason?: string | null
           paused_until?: string | null
           route_id: string
+          station_times?: Json | null
           total_seats: number
           updated_at?: string
           vehicle_id: string
@@ -331,6 +352,7 @@ export type Database = {
           pause_reason?: string | null
           paused_until?: string | null
           route_id?: string
+          station_times?: Json | null
           total_seats?: number
           updated_at?: string
           vehicle_id?: string
@@ -366,16 +388,101 @@ export type Database = {
           },
         ]
       }
+      route_stops: {
+        Row: {
+          created_at: string
+          custom_name: string | null
+          id: string
+          location_id: string | null
+          route_id: string
+          stop_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_name?: string | null
+          id?: string
+          location_id?: string | null
+          route_id: string
+          stop_order: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_name?: string | null
+          id?: string
+          location_id?: string | null
+          route_id?: string
+          stop_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_stops_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_stops_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      route_waypoints: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          lat: number
+          lng: number
+          route_id: string
+          seq: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          lat: number
+          lng: number
+          route_id: string
+          seq: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          lat?: number
+          lng?: number
+          route_id?: string
+          seq?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_waypoints_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       routes: {
         Row: {
           created_at: string
           deleted_at: string | null
           destination_id: string
+          destination_name: string | null
           distance_km: number | null
           estimated_duration_mins: number | null
           id: string
           is_active: boolean
           origin_id: string
+          origin_name: string | null
           owner_id: string | null
           updated_at: string
         }
@@ -383,11 +490,13 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           destination_id: string
+          destination_name?: string | null
           distance_km?: number | null
           estimated_duration_mins?: number | null
           id?: string
           is_active?: boolean
           origin_id: string
+          origin_name?: string | null
           owner_id?: string | null
           updated_at?: string
         }
@@ -395,11 +504,13 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           destination_id?: string
+          destination_name?: string | null
           distance_km?: number | null
           estimated_duration_mins?: number | null
           id?: string
           is_active?: boolean
           origin_id?: string
+          origin_name?: string | null
           owner_id?: string | null
           updated_at?: string
         }
@@ -418,6 +529,13 @@ export type Database = {
             referencedRelation: "locations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "routes_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       schedules: {
@@ -434,6 +552,7 @@ export type Database = {
           id: string
           pause_reason: string | null
           route_id: string
+          station_times: Json | null
           status: string
           template_id: string | null
           total_seats: number
@@ -453,6 +572,7 @@ export type Database = {
           id?: string
           pause_reason?: string | null
           route_id: string
+          station_times?: Json | null
           status?: string
           template_id?: string | null
           total_seats: number
@@ -472,6 +592,7 @@ export type Database = {
           id?: string
           pause_reason?: string | null
           route_id?: string
+          station_times?: Json | null
           status?: string
           template_id?: string | null
           total_seats?: number
@@ -693,10 +814,7 @@ export type Database = {
     }
     Functions: {
       book_seats: {
-        Args: {
-          p_schedule_id: string
-          p_seats_requested: number
-        }
+        Args: { p_schedule_id: string; p_seats_requested: number }
         Returns: boolean
       }
       book_whole_vehicle_atomic: {
@@ -710,62 +828,53 @@ export type Database = {
         Returns: string
       }
       cancel_booking_atomic: {
-        Args: {
-          p_booking_id: string
-          p_customer_id: string
-        }
-        Returns: boolean
+        Args: { p_booking_id: string; p_customer_id: string }
+        Returns: string
       }
-      driver_end_trip: {
-        Args: {
-          p_schedule_id: string
-        }
-        Returns: Json
-      }
-      driver_start_trip: {
-        Args: {
-          p_schedule_id: string
-        }
-        Returns: Json
-      }
-      expire_stale_bookings: {
-        Args: Record<string, never>
+      clear_operator_schedules: {
+        Args: { p_vehicle_ids: string[] }
         Returns: number
       }
+      delete_single_schedule_run: {
+        Args: { p_schedule_id: string }
+        Returns: boolean
+      }
+      driver_end_trip: { Args: { p_schedule_id: string }; Returns: Json }
+      driver_start_trip: { Args: { p_schedule_id: string }; Returns: Json }
+      expire_stale_bookings: { Args: never; Returns: number }
       generate_rolling_schedules: {
-        Args: {
-          p_days_ahead?: number
-        }
+        Args: { p_days_ahead?: number }
         Returns: Json
       }
+      get_current_user_role: { Args: never; Returns: string }
+      operator_owns_vehicle: {
+        Args: { p_vehicle_id: string }
+        Returns: boolean
+      }
       purge_stale_trip_locations: {
-        Args: {
-          p_retention_days?: number
-        }
+        Args: { p_retention_days?: number }
         Returns: number
       }
       restore_seats: {
-        Args: {
-          p_schedule_id: string
-          p_seats_to_restore: number
-        }
+        Args: { p_schedule_id: string; p_seats_to_restore: number }
         Returns: undefined
       }
+      run_rls_tests: { Args: never; Returns: Json }
       update_booking_status_atomic: {
         Args: {
           p_actor_id: string
           p_booking_id: string
           p_new_status: string
-          p_reason?: string | null
+          p_reason?: string
         }
-        Returns: boolean
+        Returns: string
       }
-      upsert_schedules: {
-        Args: {
-          p_schedules: Json
-        }
-        Returns: undefined
+      upsert_route_waypoints: {
+        Args: { p_route_id: string; p_waypoints: Json }
+        Returns: Json
       }
+      upsert_schedules: { Args: { p_schedules: Json }; Returns: undefined }
+      user_owns_booking: { Args: { booking_uuid: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
@@ -784,12 +893,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -813,11 +922,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -838,11 +947,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -863,11 +972,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -880,11 +989,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -894,6 +1003,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

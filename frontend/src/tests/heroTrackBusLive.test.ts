@@ -219,7 +219,7 @@ test('3. Open Tracking Access: User without bookings can track bus telemetry on 
     .eq('schedule_id', scheduleId)
     .order('recorded_at', { ascending: true })
 
-  assert.ifError(locError, 'User without bookings MUST be allowed to query trip_locations under Open Tracking Access')
+  assert.ok(!locError, 'User without bookings MUST be allowed to query trip_locations under Open Tracking Access')
   assert.ok(Array.isArray(locations), 'Locations result must be an array')
 })
 

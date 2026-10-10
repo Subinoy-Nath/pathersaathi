@@ -25,8 +25,10 @@ interface BroadcastAlertBannerProps {
   initialBroadcasts?: BroadcastNotificationItem[]
 }
 
+const EMPTY_SNAPSHOT: string[] = []
+
 class DismissedAlertsStore {
-  private cache: string[] = []
+  private cache: string[] = EMPTY_SNAPSHOT
   private raw: string | null = null
   private listeners = new Set<() => void>()
 
@@ -42,20 +44,20 @@ class DismissedAlertsStore {
   }
 
   getSnapshot = (): string[] => {
-    if (typeof window === 'undefined') return []
+    if (typeof window === 'undefined') return EMPTY_SNAPSHOT
     try {
       const raw = localStorage.getItem('dismissed_broadcasts')
       if (raw !== this.raw) {
         this.raw = raw
-        this.cache = raw ? JSON.parse(raw) : []
+        this.cache = raw ? JSON.parse(raw) : EMPTY_SNAPSHOT
       }
     } catch {
-      this.cache = []
+      this.cache = EMPTY_SNAPSHOT
     }
     return this.cache
   }
 
-  getServerSnapshot = (): string[] => []
+  getServerSnapshot = (): string[] => EMPTY_SNAPSHOT
 
   subscribe = (callback: () => void): (() => void) => {
     this.listeners.add(callback)

@@ -11,10 +11,10 @@ import {
   MapPin,
   Clock,
   Gauge,
-  Phone,
-  MessageSquare,
   AlertTriangle,
-  Radio
+  Radio,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 
 // Coordinates lookup for Barak Valley regional transit hubs
@@ -69,14 +69,27 @@ export default function PassengerTrackBusPage({
   } = useLiveBusTracking(scheduleId)
 
   // Schedule metadata state
+  interface StationTime {
+    name: string
+    stop_order: number
+    time: string // "HH:MM"
+  }
+
+  interface RouteStop {
+    stop_order: number
+    name: string // resolved from location or custom_name
+  }
+
   interface MetaData {
     vehicleName: string
     vehicleReg: string
+    isAC: boolean
     originName: string
     destName: string
     departureTime: string
-    operatorPhone: string | null
-    operatorName: string | null
+    arrivalTime: string
+    routeStops: RouteStop[]         // intermediate stops in order
+    stationTimes: StationTime[]     // per-station scheduled times from schedules.station_times
     operatorNotes: string | null
   }
 
@@ -84,6 +97,8 @@ export default function PassengerTrackBusPage({
   const [meta, setMeta] = useState<MetaData | null>(null)
   const [loadingMeta, setLoadingMeta] = useState(!isInvalidUuid)
   const [metaNotFound, setMetaNotFound] = useState(isInvalidUuid)
+  // Controls whether intermediate stops are expanded
+  const [stopsOpen, setStopsOpen] = useState(false)
 
   useEffect(() => {
     if (isInvalidUuid) return
@@ -96,16 +111,25 @@ export default function PassengerTrackBusPage({
           .select(`
             id,
             departure_time,
+            arrival_time,
+            station_times,
             pause_reason,
             vehicles (
               name,
               registration_number,
+              is_ac,
+              features,
               owner_id,
               users!vehicles_owner_id_fkey ( phone_number, name )
             ),
             routes (
               origin:locations!routes_origin_id_fkey ( name ),
-              destination:locations!routes_destination_id_fkey ( name )
+              destination:locations!routes_destination_id_fkey ( name ),
+              route_stops (
+                stop_order,
+                custom_name,
+                location:locations ( name )
+              )
             )
           `)
           .eq('id', scheduleId)
@@ -122,16 +146,38 @@ export default function PassengerTrackBusPage({
           const v = sched.vehicles as any
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const r = sched.routes as any
-          const owner = v?.users
+
+          // Determine AC status: match the same logic used in actions.ts —
+          // trust is_ac column first, then fall back to features text
+          // (some vehicles have features="AC" but is_ac not yet migrated to true)
+          const featuresText: string = v?.features || ''
+          const isACFromFeatures = featuresText.includes('AC') && !featuresText.includes('Non-AC')
+          const isAC: boolean = v?.is_ac === true || isACFromFeatures
+
+          // Resolve intermediate stops: sort by stop_order, resolve name
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const rawStops: RouteStop[] = ((r?.route_stops as any[]) || [])
+            .map((s: any) => ({
+              stop_order: s.stop_order,
+              name: s.location?.name || s.custom_name || `Stop ${s.stop_order}`
+            }))
+            .sort((a: RouteStop, b: RouteStop) => a.stop_order - b.stop_order)
+
+          // Station times come directly from JSONB on the schedule
+          const rawStationTimes: StationTime[] = Array.isArray(sched.station_times)
+            ? (sched.station_times as unknown as StationTime[])
+            : []
 
           setMeta({
             vehicleName: v?.name || 'Bus',
             vehicleReg: v?.registration_number || 'AS-10',
+            isAC,
             originName: r?.origin?.name || 'Silchar',
             destName: r?.destination?.name || 'Sribhumi',
             departureTime: sched.departure_time,
-            operatorPhone: owner?.phone_number || null,
-            operatorName: owner?.name || 'Fleet Operator',
+            arrivalTime: sched.arrival_time,
+            routeStops: rawStops,
+            stationTimes: rawStationTimes,
             operatorNotes: sched.pause_reason
           })
         }
@@ -253,42 +299,174 @@ export default function PassengerTrackBusPage({
           </div>
         </div>
 
-        {/* Bus and Route Header Card */}
+        {/* Bus and Route Header Card — full route timeline */}
         <div className="glass-card rounded-3xl p-6 border border-white/60 shadow-lg relative overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#004D40] via-[#00affe] to-[#00E676]" />
 
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-bold text-[#004D40] uppercase tracking-wider mb-1">
-                <Bus className="w-4 h-4" />
-                <span>{meta?.vehicleName || 'Transit Coach'}</span>
-                <span className="bg-[#004D40]/10 text-[#00342b] font-mono px-2 py-0.5 rounded-md text-[11px]">
-                  {meta?.vehicleReg || 'AS-10-DC-5047'}
-                </span>
-              </div>
-              <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2 flex-wrap">
-                <span>{originName}</span>
-                <span className="text-[#00affe]">➔</span>
-                <span>{destName}</span>
-              </h1>
+          {/* Vehicle badge row */}
+          <div className="flex items-center gap-2 flex-wrap mb-5">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#004D40] uppercase tracking-wider">
+              <Bus className="w-4 h-4" />
+              <span>{meta?.vehicleName || 'Transit Coach'}</span>
             </div>
-
-            <div className="text-right sm:border-l sm:border-gray-200 sm:pl-6">
-              <div className="text-xs text-gray-500 font-semibold mb-1 flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-[#004D40]" /> ছাড়ার সময় / Departure
-              </div>
-              <div className="text-base font-extrabold text-gray-900 font-mono">
-                {meta?.departureTime
-                  ? new Date(meta.departureTime).toLocaleTimeString('en-IN', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true,
-                      timeZone: 'Asia/Kolkata'
-                    })
-                  : 'Scheduled'}
-              </div>
-            </div>
+            <span className="bg-[#004D40]/10 text-[#00342b] font-mono px-2 py-0.5 rounded-md text-[11px] font-bold">
+              {meta?.vehicleReg || 'AS-10-DC-5047'}
+            </span>
+            {meta !== null && (
+              <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                meta.isAC
+                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                  : 'bg-gray-100 text-gray-600 border-gray-200'
+              }`}>
+                {meta.isAC ? '❄️ AC' : 'Non-AC'}
+              </span>
+            )}
           </div>
+
+          {/* Route timeline: Origin → Stops → Destination */}
+          {(() => {
+            const stationLookup = new Map(
+              (meta?.stationTimes ?? []).map(s => [s.name.toLowerCase().trim(), s.time])
+            )
+
+            const formatISO = (iso: string) =>
+              new Date(iso).toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+                timeZone: 'Asia/Kolkata'
+              })
+
+            const resolveTime = (name: string): string | null => {
+              const key = name.toLowerCase().trim()
+              if (stationLookup.has(key)) return stationLookup.get(key)!
+              for (const [k, v] of stationLookup) {
+                if (key.includes(k) || k.includes(key)) return v
+              }
+              return null
+            }
+
+            type Stop = { name: string; time: string | null; isOrigin?: boolean; isDestination?: boolean }
+
+            const stops: Stop[] = [
+              {
+                name: originName,
+                time: meta?.departureTime ? formatISO(meta.departureTime) : resolveTime(originName),
+                isOrigin: true
+              },
+              ...(meta?.routeStops ?? []).map(s => ({
+                name: s.name,
+                time: resolveTime(s.name)
+              })),
+              {
+                name: destName,
+                time: meta?.arrivalTime ? formatISO(meta.arrivalTime) : resolveTime(destName),
+                isDestination: true
+              }
+            ]
+
+            // Separate origin/destination from intermediate stops
+            const origin = stops[0]
+            const destination = stops[stops.length - 1]
+            const intermediates = stops.slice(1, -1)
+
+            const StopRow = ({ stop, isFirst, isLast, showConnector }: {
+              stop: Stop; isFirst: boolean; isLast: boolean; showConnector: boolean
+            }) => {
+              const dotCls = isFirst
+                ? 'bg-[#004D40] border-[#004D40]'
+                : isLast
+                ? 'bg-[#d32f2f] border-[#d32f2f]'
+                : 'bg-white border-[#00affe]'
+              const nameCls = isFirst
+                ? 'text-[#004D40] font-extrabold text-base'
+                : isLast
+                ? 'text-[#d32f2f] font-extrabold text-base'
+                : 'text-[#00342b] font-semibold text-sm'
+              const timeCls = isFirst || isLast
+                ? 'text-gray-900 font-extrabold text-sm'
+                : 'text-gray-500 font-semibold text-xs'
+
+              return (
+                <div className="flex items-stretch gap-4">
+                  <div className="flex flex-col items-center w-4 shrink-0 pt-1">
+                    <div className={`w-3.5 h-3.5 rounded-full border-2 shadow-sm shrink-0 ${dotCls}`} />
+                    {showConnector && (
+                      <div className="w-px flex-1 bg-gradient-to-b from-[#004D40]/25 to-[#00affe]/20 my-1" />
+                    )}
+                  </div>
+                  <div className={`flex items-start justify-between w-full gap-3 ${showConnector ? 'pb-3' : 'pb-0'}`}>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={nameCls}>{stop.name}</span>
+                      {isFirst && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider bg-[#004D40]/10 text-[#004D40] px-1.5 py-0.5 rounded">
+                          Origin
+                        </span>
+                      )}
+                      {isLast && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider bg-red-50 text-[#d32f2f] px-1.5 py-0.5 rounded">
+                          Destination
+                        </span>
+                      )}
+                    </div>
+                    <span className={`font-mono shrink-0 ${timeCls}`}>
+                      {stop.time ?? '—'}
+                    </span>
+                  </div>
+                </div>
+              )
+            }
+
+            return (
+              <div className="flex flex-col">
+                {/* Always show origin */}
+                <StopRow stop={origin} isFirst={true} isLast={false} showConnector={true} />
+
+                {/* Intermediate stops — toggle */}
+                {intermediates.length > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setStopsOpen(o => !o)}
+                      className="flex items-center gap-1.5 self-start ml-8 mb-2 text-[11px] font-bold text-[#00affe] hover:text-[#004D40] transition-colors"
+                    >
+                      {stopsOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      {stopsOpen
+                        ? 'Hide intermediate stops'
+                        : `${intermediates.length} intermediate stop${intermediates.length > 1 ? 's' : ''}`}
+                    </button>
+
+                    {stopsOpen && (
+                      <div className="flex flex-col ml-0">
+                        {intermediates.map((stop, i) => (
+                          <StopRow
+                            key={i}
+                            stop={stop}
+                            isFirst={false}
+                            isLast={false}
+                            showConnector={true}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Connecting line to destination when collapsed */}
+                    {!stopsOpen && (
+                      <div className="flex items-stretch gap-4 mb-0">
+                        <div className="flex flex-col items-center w-4 shrink-0">
+                          <div className="w-px flex-1 bg-gradient-to-b from-[#00affe]/20 to-[#d32f2f]/25 h-4" />
+                        </div>
+                        <div className="flex-1" />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Always show destination */}
+                <StopRow stop={destination} isFirst={false} isLast={true} showConnector={false} />
+              </div>
+            )
+          })()}
         </div>
 
         {/* Driver / Operator Alert Banner if present */}
@@ -316,8 +494,8 @@ export default function PassengerTrackBusPage({
           />
         </div>
 
-        {/* Telemetry Telemetry HUD & Driver Contact Card */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Telemetry HUD */}
+        <div className="grid grid-cols-1 gap-4">
           {/* Real-time Telemetry Metrics */}
           <div className="glass-card rounded-2xl p-5 border border-white/60 shadow-sm space-y-3">
             <h3 className="text-xs font-bold text-[#004D40] uppercase tracking-wider flex items-center gap-1.5">
@@ -363,44 +541,6 @@ export default function PassengerTrackBusPage({
             </div>
           </div>
 
-          {/* Operator / Driver Contact */}
-          <div className="glass-card rounded-2xl p-5 border border-white/60 shadow-sm flex flex-col justify-between space-y-3">
-            <div>
-              <h3 className="text-xs font-bold text-[#004D40] uppercase tracking-wider mb-2">
-                সহায়তা ও অনুসন্ধান / OPERATOR ASSISTANCE
-              </h3>
-              <p className="text-sm font-bold text-gray-900">{meta?.operatorName || 'Pather Saathi Dispatch'}</p>
-              <p className="text-xs text-gray-500">Barak Valley Fleet Controller • Silchar ISBT</p>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              {meta?.operatorPhone ? (
-                <>
-                  <a
-                    href={`tel:${meta.operatorPhone.replace(/\s+/g, '')}`}
-                    className="flex-1 bg-[#004D40] hover:bg-[#00382d] text-white py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all"
-                  >
-                    <Phone className="w-3.5 h-3.5" /> কল করুন / Call
-                  </a>
-                  <a
-                    href={`https://wa.me/${meta.operatorPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hello, I am tracking schedule ${scheduleId} on Pather Saathi.`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
-                  </a>
-                </>
-              ) : (
-                <a
-                  href="tel:+919435012345"
-                  className="w-full bg-[#004D40] text-white py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
-                >
-                  <Phone className="w-3.5 h-3.5" /> হেল্পলাইন / Call Helpline (+91 94350 12345)
-                </a>
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </div>

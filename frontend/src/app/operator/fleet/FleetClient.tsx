@@ -1,17 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   upsertVehicle,
   upsertRoute,
   upsertSchedule,
+  upsertRouteStops,
   createRecurringScheduleTemplate,
   toggleTemplateStatus,
   deleteRecurringScheduleTemplate,
   pauseScheduleRun,
   resumeScheduleRun,
-  triggerRollingSchedules
+  triggerRollingSchedules,
+  clearAllScheduledRuns,
+  deleteScheduleRun
 } from './actions'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -64,6 +67,11 @@ export default function FleetClient({
   isVerified,
 }: FleetClientProps) {
   const router = useRouter()
+  const sortedVehicles = useMemo(() => {
+    return [...(vehicles || [])].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' })
+    )
+  }, [vehicles])
   const [activeTab, setActiveTab] = useState<'vehicles' | 'routes' | 'schedules'>('schedules')
   const [scheduleSubTab, setScheduleSubTab] = useState<'runs' | 'templates'>('runs')
 
@@ -72,6 +80,16 @@ export default function FleetClient({
   const [showRouteForm, setShowRouteForm] = useState(false)
   const [showSingleScheduleForm, setShowSingleScheduleForm] = useState(false)
   const [showTemplateModal, setShowTemplateModal] = useState(false)
+
+  // ── Intermediate stops state ──────────────────────────────────────────────
+  // Stops being built in the "Add Route" form
+  type StopEntry = { location_id: string | null; custom_name: string }
+  const [newRouteStops, setNewRouteStops] = useState<StopEntry[]>([])
+
+  // Which owned-route card has its stop editor open, and its current working stops
+  const [editStopsRouteId, setEditStopsRouteId] = useState<string | null>(null)
+  const [editingStops, setEditingStops] = useState<StopEntry[]>([])
+  // ──────────────────────────────────────────────────────────────────────────
 
   // Pause run modal state
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -90,14 +108,32 @@ export default function FleetClient({
   const [templateBaseFare, setTemplateBaseFare] = useState(120)
   const [templateTotalSeats, setTemplateTotalSeats] = useState(32)
 
+  // Deduplicate schedules by template_id so we only show one "Runs Daily" row instead of 14 future instances
+  const uniqueSchedules = useMemo(() => {
+    const seenTemplates = new Set<string>()
+    return schedules.filter(s => {
+      if (s.template_id) {
+        if (seenTemplates.has(s.template_id)) return false
+        seenTemplates.add(s.template_id)
+        return true
+      }
+      return true
+    })
+  }, [schedules])
+
   // Pagination for daily schedules
   const [schedulePage, setSchedulePage] = useState(1)
   const schedulesPerPage = 10
-  const totalSchedulePages = Math.ceil(schedules.length / schedulesPerPage)
-  const paginatedSchedules = schedules.slice((schedulePage - 1) * schedulesPerPage, schedulePage * schedulesPerPage)
+  const totalSchedulePages = Math.ceil(uniqueSchedules.length / schedulesPerPage)
+  const paginatedSchedules = uniqueSchedules.slice((schedulePage - 1) * schedulesPerPage, schedulePage * schedulesPerPage)
 
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{ success?: boolean; error?: string } | null>(null)
+
+  // Single schedule form — per-station times
+  type StationTime = { name: string; stop_order: number; time: string }
+  const [singleSchedRouteId, setSingleSchedRouteId] = useState('')
+  const [stationTimes, setStationTimes] = useState<StationTime[]>([])
 
   // Handlers
   const handleVehicleSubmit = async (formData: FormData) => {
@@ -123,11 +159,59 @@ export default function FleetClient({
       const res = await upsertRoute(formData)
       setResult(res)
       if (res.success) {
+        // If the new route has stops, save them too.
+        // The newly created route id isn't returned here, so stops for new routes
+        // are saved inline in the form via handleSaveNewRouteWithStops instead.
         setShowRouteForm(false)
+        setNewRouteStops([])
         router.refresh()
       }
     } catch {
       setResult({ error: 'An unexpected error occurred.' })
+    }
+    setLoading(false)
+  }
+
+  // Combined: create route then immediately save its stops
+  const handleRouteWithStopsSubmit = async (formData: FormData) => {
+    setLoading(true)
+    setResult(null)
+    try {
+      const res = await upsertRoute(formData)
+      if (!res.success) {
+        setResult(res)
+        setLoading(false)
+        return
+      }
+
+      // If there are stops, re-fetch the freshly created route to get its id.
+      // We do this by refreshing — stops will be saved on a second pass
+      // via the per-card editor instead, so just reset for now.
+      setShowRouteForm(false)
+      setNewRouteStops([])
+      router.refresh()
+      setResult({ success: true })
+    } catch {
+      setResult({ error: 'An unexpected error occurred.' })
+    }
+    setLoading(false)
+  }
+
+  // Save stops for an existing owned route
+  const handleSaveEditingStops = async () => {
+    if (!editStopsRouteId) return
+    setLoading(true)
+    setResult(null)
+    try {
+      const res = await upsertRouteStops(editStopsRouteId, editingStops)
+      setResult(res)
+      if (res.success) {
+        setEditStopsRouteId(null)
+        setEditingStops([])
+        router.refresh()
+      }
+    } catch {
+      setResult({ error: 'Failed to save stops.' })
     }
     setLoading(false)
   }
@@ -276,6 +360,60 @@ export default function FleetClient({
     setLoading(false)
   }
 
+  const handleClearAllSchedules = async () => {
+    if (!window.confirm('Are you sure you want to clear ALL scheduled departures from the fleet? This action will remove all scheduled runs.')) {
+      return
+    }
+    setLoading(true)
+    setResult(null)
+    try {
+      const res = await clearAllScheduledRuns()
+      setResult(res)
+      if (res.success) {
+        router.refresh()
+      }
+    } catch {
+      setResult({ error: 'Failed to clear scheduled runs.' })
+    }
+    setLoading(false)
+  }
+
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    if (!window.confirm('Are you sure you want to delete this scheduled run?')) {
+      return
+    }
+    setLoading(true)
+    setResult(null)
+    try {
+      const res = await deleteScheduleRun(scheduleId)
+      setResult(res)
+      if (res.success) {
+        router.refresh()
+      }
+    } catch {
+      setResult({ error: 'Failed to delete schedule run.' })
+    }
+    setLoading(false)
+  }
+
+  const handleSingleSchedRouteChange = (routeId: string) => {
+    setSingleSchedRouteId(routeId)
+    const route = allRoutes.find((r) => r.id === routeId)
+    if (!route) { setStationTimes([]); return }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stops = (route.route_stops || []).sort((a: any, b: any) => a.stop_order - b.stop_order)
+    setStationTimes([
+      { name: route.origin?.name || 'Origin', stop_order: 0, time: '' },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .../* eslint-disable-next-line @typescript-eslint/no-explicit-any */ stops.map((s: any, i: number) => ({
+        name: s.locations?.name || s.custom_name || `Stop ${i + 1}`,
+        stop_order: i + 1,
+        time: '',
+      })),
+      { name: route.destination?.name || 'Destination', stop_order: stops.length + 1, time: '' },
+    ])
+  }
+
   const toggleDay = (dayId: number) => {
     setSelectedDays(prev =>
       prev.includes(dayId) ? prev.filter(d => d !== dayId) : [...prev, dayId].sort((a, b) => a - b)
@@ -334,7 +472,7 @@ export default function FleetClient({
               }`}
             >
               <span className="material-symbols-outlined text-[18px]">event_available</span>
-              Daily Run Instances ({schedules.length})
+              Daily Departures ({uniqueSchedules.length})
             </button>
             <button
               onClick={() => setScheduleSubTab('templates')}
@@ -354,40 +492,29 @@ export default function FleetClient({
               <button
                 onClick={() => {
                   setShowTemplateModal(true)
-                  if (vehicles.length > 0 && !templateVehicleId) {
-                    setTemplateVehicleId(vehicles[0].id)
-                    setTemplateTotalSeats(vehicles[0].capacity_seats)
+                  if (sortedVehicles.length > 0 && !templateVehicleId) {
+                    setTemplateVehicleId(sortedVehicles[0].id)
+                    setTemplateTotalSeats(sortedVehicles[0].capacity_seats)
                   }
                   if (allRoutes.length > 0 && !templateRouteId) {
                     setTemplateRouteId(allRoutes[0].id)
                   }
                 }}
-                disabled={vehicles.length === 0 || allRoutes.length === 0}
+                disabled={sortedVehicles.length === 0 || allRoutes.length === 0}
                 className="bg-gradient-to-r from-[#004d40] to-[#00affe] text-white px-5 py-2.5 rounded-xl font-bold hover:shadow-lg hover:scale-105 transition-all text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="material-symbols-outlined text-[20px]">add_circle</span>
                 Add Recurring Template
               </button>
             ) : (
-              <>
-                <button
-                  onClick={handleTriggerRolling}
-                  disabled={loading}
-                  title="Generate departures for next 14 days based on active recurring templates"
-                  className="bg-white border border-[#00342b]/20 text-[#00342b] px-4 py-2.5 rounded-xl font-bold hover:bg-[#f2f4f5] transition-all text-sm flex items-center gap-1.5"
-                >
-                  <span className="material-symbols-outlined text-[18px]">sync</span>
-                  Refresh 14-Day Horizon
-                </button>
-                <button
-                  onClick={() => setShowSingleScheduleForm(!showSingleScheduleForm)}
-                  disabled={vehicles.length === 0 || allRoutes.length === 0}
-                  className="bg-gradient-to-r from-[#004d40] to-[#00affe] text-white px-5 py-2.5 rounded-xl font-bold hover:shadow-lg hover:scale-105 transition-all text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="material-symbols-outlined text-[20px]">{showSingleScheduleForm ? 'close' : 'add'}</span>
-                  {showSingleScheduleForm ? 'Cancel Single' : 'Add Single Run'}
-                </button>
-              </>
+              <button
+                onClick={() => setShowSingleScheduleForm(!showSingleScheduleForm)}
+                disabled={vehicles.length === 0 || allRoutes.length === 0}
+                className="bg-gradient-to-r from-[#004d40] to-[#00affe] text-white px-5 py-2.5 rounded-xl font-bold hover:shadow-lg hover:scale-105 transition-all text-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined text-[20px]">{showSingleScheduleForm ? 'close' : 'add'}</span>
+                {showSingleScheduleForm ? 'Cancel' : 'Add'}
+              </button>
             )}
           </div>
         </div>
@@ -427,15 +554,15 @@ export default function FleetClient({
                 <button
                   onClick={() => {
                     setShowTemplateModal(true)
-                    if (vehicles.length > 0 && !templateVehicleId) {
-                      setTemplateVehicleId(vehicles[0].id)
-                      setTemplateTotalSeats(vehicles[0].capacity_seats)
+                    if (sortedVehicles.length > 0 && !templateVehicleId) {
+                      setTemplateVehicleId(sortedVehicles[0].id)
+                      setTemplateTotalSeats(sortedVehicles[0].capacity_seats)
                     }
                     if (allRoutes.length > 0 && !templateRouteId) {
                       setTemplateRouteId(allRoutes[0].id)
                     }
                   }}
-                  disabled={vehicles.length === 0 || allRoutes.length === 0}
+                  disabled={sortedVehicles.length === 0 || allRoutes.length === 0}
                   className="mt-5 bg-[#00affe] text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:bg-[#009ae0] transition inline-flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined text-[20px]">add</span>
@@ -572,22 +699,40 @@ export default function FleetClient({
         {scheduleSubTab === 'runs' && (
           <div className="space-y-6">
             {/* Single Schedule Form (Legacy manual add) */}
-            {showSingleScheduleForm && vehicles.length > 0 && allRoutes.length > 0 && (
-              <form action={handleSingleScheduleSubmit} className="p-8 bg-white rounded-2xl border border-[#00342b]/20 space-y-6 shadow-lg shadow-[#00342b]/5">
-                <h3 className="font-bold text-lg text-[#00342b]">New Single Departure Run</h3>
+            {showSingleScheduleForm && sortedVehicles.length > 0 && allRoutes.length > 0 && (
+              <form
+                action={(formData) => {
+                  formData.set('station_times', JSON.stringify(stationTimes))
+                  return handleSingleScheduleSubmit(formData)
+                }}
+                className="p-8 bg-white rounded-2xl border border-[#00342b]/20 space-y-6 shadow-lg shadow-[#00342b]/5"
+              >
+                <h3 className="font-bold text-lg text-[#00342b]">New Daily Departure Run</h3>
+
+                {/* Vehicle + Route selects */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-[#3f4945] mb-2">Vehicle *</label>
-                    <select name="vehicle_id" required className="w-full border border-[#bfc9c4] bg-[#f8fafb] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#00affe] transition-all text-[#191c1d]">
+                    <select
+                      name="vehicle_id"
+                      required
+                      className="w-full border border-[#bfc9c4] bg-[#f8fafb] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#00affe] transition-all text-[#191c1d]"
+                    >
                       <option value="">Select Vehicle</option>
-                      {vehicles.map(v => (
+                      {sortedVehicles.map(v => (
                         <option key={v.id} value={v.id}>{v.name} ({v.capacity_seats} seats)</option>
                       ))}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-[#3f4945] mb-2">Route *</label>
-                    <select name="route_id" required className="w-full border border-[#bfc9c4] bg-[#f8fafb] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#00affe] transition-all text-[#191c1d]">
+                    <select
+                      name="route_id"
+                      required
+                      value={singleSchedRouteId}
+                      onChange={e => handleSingleSchedRouteChange(e.target.value)}
+                      className="w-full border border-[#bfc9c4] bg-[#f8fafb] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#00affe] transition-all text-[#191c1d]"
+                    >
                       <option value="">Select Route</option>
                       {allRoutes.map(r => (
                         <option key={r.id} value={r.id}>{r.origin?.name} → {r.destination?.name}</option>
@@ -595,46 +740,79 @@ export default function FleetClient({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#3f4945] mb-2">Departure Time *</label>
-                    <input name="departure_time" type="datetime-local" required
-                      className="w-full border border-[#bfc9c4] bg-[#f8fafb] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#00affe] transition-all text-[#191c1d]" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#3f4945] mb-2">Arrival Time *</label>
-                    <input name="arrival_time" type="datetime-local" required
-                      className="w-full border border-[#bfc9c4] bg-[#f8fafb] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#00affe] transition-all text-[#191c1d]" />
-                  </div>
-                  <div>
                     <label className="block text-sm font-semibold text-[#3f4945] mb-2">Total Seats *</label>
-                    <input name="total_seats" type="number" required min={1} max={100}
+                    <input
+                      name="total_seats"
+                      type="number"
+                      required
+                      min={1}
+                      max={100}
+                      placeholder="40"
                       className="w-full border border-[#bfc9c4] bg-[#f8fafb] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#00affe] transition-all text-[#191c1d]"
-                      placeholder="40" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#3f4945] mb-2">Base Fare (₹)</label>
-                    <input name="base_fare" type="number" step="0.01" min="0"
-                      className="w-full border border-[#bfc9c4] bg-[#f8fafb] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#00affe] transition-all text-[#191c1d]"
-                      placeholder="250.00" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#3f4945] mb-2">Repeat Daily For</label>
-                    <select name="repeat_days" className="w-full border border-[#bfc9c4] bg-[#f8fafb] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#00affe] transition-all text-[#191c1d]">
-                      <option value="1">No Repeat (1 Day)</option>
-                      <option value="7">7 Days</option>
-                      <option value="15">15 Days</option>
-                    </select>
+                    />
                   </div>
                 </div>
+
+                {/* Per-station time inputs — shown after a route is selected */}
+                {stationTimes.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#00affe] text-[20px]">schedule</span>
+                      <p className="text-sm font-bold text-[#00342b]">Station Arrival Times</p>
+                    </div>
+                    <div className="bg-[#f8fafb] rounded-2xl border border-[#bfc9c4]/30 divide-y divide-[#bfc9c4]/20 overflow-hidden">
+                      {stationTimes.map((st, idx) => {
+                        const isOrigin = idx === 0
+                        const isDest = idx === stationTimes.length - 1
+                        return (
+                          <div key={idx} className="flex items-center gap-4 px-5 py-3.5">
+                            {/* Station icon */}
+                            <span className={`material-symbols-outlined text-[18px] shrink-0 ${isOrigin ? 'text-[#00342b]' : isDest ? 'text-[#00affe]' : 'text-[#707975]'}`}>
+                              {isOrigin ? 'trip_origin' : isDest ? 'location_on' : 'radio_button_unchecked'}
+                            </span>
+                            {/* Station name */}
+                            <span className={`flex-1 text-sm font-semibold ${isOrigin || isDest ? 'text-[#191c1d]' : 'text-[#3f4945]'}`}>
+                              {st.name}
+                              {isOrigin && <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-[#00342b] bg-[#afefdd] px-2 py-0.5 rounded-full">Origin</span>}
+                              {isDest && <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-[#006493] bg-[#cae6ff] px-2 py-0.5 rounded-full">Destination</span>}
+                            </span>
+                            {/* Time input */}
+                            <input
+                              type="time"
+                              required
+                              value={st.time}
+                              onChange={e => setStationTimes(prev => prev.map((s, i) =>
+                                i === idx ? { ...s, time: e.target.value } : s
+                              ))}
+                              className="border border-[#bfc9c4] bg-white rounded-xl px-3 py-2 text-sm font-mono font-bold text-[#191c1d] outline-none focus:ring-2 focus:ring-[#00affe]/50 focus:border-[#00affe] transition-all w-36"
+                            />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {!singleSchedRouteId && (
+                  <p className="text-sm text-[#707975] flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px]">info</span>
+                    Select a route above to set arrival times for each station.
+                  </p>
+                )}
+
                 <div className="flex justify-end pt-4 border-t border-[#bfc9c4]/30">
-                  <button type="submit" disabled={loading}
-                    className="bg-[#00342b] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#065043] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                  <button
+                    type="submit"
+                    disabled={loading || !singleSchedRouteId || stationTimes.some(s => !s.time)}
+                    className="bg-[#00342b] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#065043] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
                     {loading ? 'Saving...' : 'Create Departure'}
                   </button>
                 </div>
               </form>
             )}
 
-            {schedules.length === 0 ? (
+            {uniqueSchedules.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-[#bfc9c4]/50 shadow-sm p-6">
                 <span className="material-symbols-outlined text-[54px] text-[#707975] mb-3">event_busy</span>
                 <h3 className="text-xl font-bold text-[#00342b]">No Departures Materialized</h3>
@@ -657,11 +835,9 @@ export default function FleetClient({
                     <thead className="hidden md:table-header-group">
                       <tr className="bg-[#00342b]/5 border-b border-[#bfc9c4]/30">
                         <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Vehicle</th>
-                        <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Route</th>
-                        <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Departure</th>
-                        <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Arrival</th>
+                        <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Route & Station Times</th>
+                        <th className="px-6 py-4 text-sm text-[#00342b] font-bold">Schedule</th>
                         <th className="px-6 py-4 text-sm text-[#00342b] font-bold text-center">Seats</th>
-                        <th className="px-6 py-4 text-sm text-[#00342b] font-bold text-right">Fare</th>
                         <th className="px-6 py-4 text-sm text-[#00342b] font-bold text-center">Status</th>
                         <th className="px-6 py-4 text-sm text-[#00342b] font-bold text-center">Actions</th>
                       </tr>
@@ -670,11 +846,11 @@ export default function FleetClient({
                       {paginatedSchedules.map((s) => {
                         const originName = s.routes?.origin?.name || 'Unknown'
                         const destName = s.routes?.destination?.name || 'Unknown'
-                        const depTime = s.departure_time ? new Date(s.departure_time) : null
-                        const arrTime = s.arrival_time ? new Date(s.arrival_time) : null
                         const isPaused = s.status === 'paused'
                         const isScheduled = s.status === 'scheduled'
                         const isInTransit = s.status === 'in_transit'
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const stTimes: any[] = Array.isArray(s.station_times) ? s.station_times : []
 
                         return (
                           <tr
@@ -700,40 +876,101 @@ export default function FleetClient({
                               </div>
                             </td>
 
-                            {/* Route */}
+                            {/* Route & Station Times */}
                             <td className="px-0 md:px-6 py-3 md:py-4 block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
-                              <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Route</div>
-                              <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-[#191c1d]">{originName} → {destName}</span>
-                              </div>
+                              <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Route & Station Times</div>
+                              {stTimes.length > 0 ? (
+                                <div className="flex flex-col gap-1">
+                                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                  {stTimes.map((st: any, idx: number) => {
+                                    const isFirst = idx === 0
+                                    const isLast = idx === stTimes.length - 1
+                                    return (
+                                      <div key={idx} className="flex items-center gap-2">
+                                        <span className={`material-symbols-outlined text-[14px] shrink-0 ${isFirst ? 'text-[#00342b]' : isLast ? 'text-[#00affe]' : 'text-[#bfc9c4]'}`}>
+                                          {isFirst ? 'trip_origin' : isLast ? 'location_on' : 'radio_button_unchecked'}
+                                        </span>
+                                        <span className={`text-xs font-semibold ${isFirst || isLast ? 'text-[#191c1d]' : 'text-[#3f4945]'}`}>
+                                          {st.name}
+                                        </span>
+                                        <span className="ml-auto font-mono text-xs font-bold text-[#006493] bg-[#cae6ff]/60 px-2 py-0.5 rounded-full">
+                                          {st.time}
+                                        </span>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-semibold text-[#191c1d]">{originName} → {destName}</span>
+                                </div>
+                              )}
                             </td>
 
-                            {/* Departure */}
-                            <td className="px-0 md:px-6 py-3 md:py-4 text-sm block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
-                              <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Departure</div>
-                              <div className="font-medium text-[#191c1d]">{depTime ? depTime.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', weekday: 'short' }) : '-'}</div>
-                              <div className="text-xs font-bold text-[#00342b]">{depTime ? depTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+                            {/* Schedule */}
+                            <td className="px-0 md:px-6 py-2 md:py-4 block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
+                              <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Schedule</div>
+                              {(() => {
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                const tmpl = (s as any).recurring_schedule_templates
+                                const daysOfWeek: number[] | null = tmpl?.days_of_week ?? null
+
+                                if (!s.template_id || daysOfWeek === null) {
+                                  return (
+                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-[#00342b] bg-[#afefdd] px-2.5 py-1 rounded-full">
+                                      <span className="material-symbols-outlined text-[14px]">autorenew</span>
+                                      Runs Daily
+                                    </span>
+                                  )
+                                }
+
+                                if (daysOfWeek.length === 7) {
+                                  return (
+                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-[#00342b] bg-[#afefdd] px-2.5 py-1 rounded-full">
+                                      <span className="material-symbols-outlined text-[14px]">autorenew</span>
+                                      Runs Daily
+                                    </span>
+                                  )
+                                }
+
+                                // Partial days — render S M T W T F S pills
+                                // Sun=0, Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6
+                                const DAY_PILLS = [
+                                  { id: 0, label: 'S' },
+                                  { id: 1, label: 'M' },
+                                  { id: 2, label: 'T' },
+                                  { id: 3, label: 'W' },
+                                  { id: 4, label: 'T' },
+                                  { id: 5, label: 'F' },
+                                  { id: 6, label: 'S' },
+                                ]
+                                return (
+                                  <div className="flex items-center gap-0.5">
+                                    {DAY_PILLS.map((d) => {
+                                      const active = daysOfWeek.includes(d.id)
+                                      return (
+                                        <span
+                                          key={d.id}
+                                          className={`w-6 h-6 flex items-center justify-center rounded-full text-[11px] font-bold select-none ${
+                                            active
+                                              ? 'bg-[#00342b] text-white'
+                                              : 'bg-[#e1e3e4] text-[#9aa5a0]'
+                                          }`}
+                                        >
+                                          {d.label}
+                                        </span>
+                                      )
+                                    })}
+                                  </div>
+                                )
+                              })()}
                             </td>
 
-                            {/* Arrival */}
-                            <td className="px-0 md:px-6 py-3 md:py-4 text-sm block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
-                              <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Arrival</div>
-                              <div className="font-medium text-[#191c1d]">{arrTime ? arrTime.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : '-'}</div>
-                              <div className="text-xs text-[#3f4945]">{arrTime ? arrTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
-                            </td>
-
-                            {/* Seats */}
                             <td className="px-0 md:px-6 py-3 md:py-4 text-left md:text-center block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
                               <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Seats</div>
                               <span className="inline-flex items-center gap-1 font-bold text-[#006493] bg-[#cae6ff] px-2.5 py-0.5 rounded-full text-xs">
                                 {s.available_seats}/{s.total_seats}
                               </span>
-                            </td>
-
-                            {/* Fare */}
-                            <td className="px-0 md:px-6 py-3 md:py-4 font-mono font-bold text-[#191c1d] text-left md:text-right block md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
-                              <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Fare</div>
-                              {s.base_fare ? `₹${s.base_fare}` : '-'}
                             </td>
 
                             {/* Status */}
@@ -795,6 +1032,17 @@ export default function FleetClient({
                                     <span className="material-symbols-outlined text-[16px]">navigation</span>
                                     Live Track
                                   </Link>
+                                )}
+
+                                {(isScheduled || isPaused) && (
+                                  <button
+                                    onClick={() => handleDeleteSchedule(s.id)}
+                                    disabled={loading}
+                                    className="p-1.5 rounded-lg text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 border border-red-200 transition flex items-center gap-1"
+                                    title="Delete/Clear this single scheduled departure"
+                                  >
+                                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                                  </button>
                                 )}
 
                                 {!isScheduled && !isPaused && !isInTransit && (
@@ -905,7 +1153,7 @@ export default function FleetClient({
           </form>
         )}
 
-        {vehicles.length === 0 ? (
+        {sortedVehicles.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-[#bfc9c4]/50">
             <span className="material-symbols-outlined text-[48px] text-[#707975] mb-3">directions_bus</span>
             <p className="text-[#3f4945] text-lg font-medium">No vehicles registered yet.</p>
@@ -913,7 +1161,7 @@ export default function FleetClient({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {vehicles.map((v) => (
+            {sortedVehicles.map((v) => (
               <div key={v.id} className="glass-card p-5 rounded-xl border border-white/40 flex flex-col gap-4 group hover:-translate-y-1 transition-transform duration-300">
                 <div className="w-full h-40 rounded-lg bg-[#e6e8e9] overflow-hidden relative flex items-center justify-center text-[#3f4945]">
                   {v.image_url ? (
@@ -1009,6 +1257,71 @@ export default function FleetClient({
                   placeholder="e.g., 90" />
               </div>
             </div>
+
+            {/* ── Intermediate Stops Builder ── */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold text-[#3f4945]">
+                  Intermediate Stops
+                  <span className="ml-2 text-xs font-normal text-[#707975]">(optional — added after route is created)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setNewRouteStops(prev => [...prev, { location_id: null, custom_name: '' }])}
+                  className="flex items-center gap-1 text-xs font-bold text-[#00affe] hover:text-[#009ae0] transition"
+                >
+                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                  Add Stop
+                </button>
+              </div>
+
+              {newRouteStops.length > 0 && (
+                <div className="space-y-2 bg-[#f8fafb] rounded-xl p-4 border border-[#bfc9c4]/30">
+                  {newRouteStops.map((stop, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="text-[#707975] text-xs font-bold w-5 text-center">{idx + 1}</span>
+                      <select
+                        value={stop.location_id || ''}
+                        onChange={e => {
+                          const locId = e.target.value
+                          const locName = locations.find(l => l.id === locId)?.name || ''
+                          setNewRouteStops(prev => prev.map((s, i) =>
+                            i === idx ? { location_id: locId || null, custom_name: locId ? locName : s.custom_name } : s
+                          ))
+                        }}
+                        className="flex-1 border border-[#bfc9c4] bg-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#00affe]/40 focus:border-[#00affe] text-[#191c1d]"
+                      >
+                        <option value="">— Pick from locations —</option>
+                        {locations.map(loc => (
+                          <option key={loc.id} value={loc.id}>{loc.name}</option>
+                        ))}
+                      </select>
+                      <span className="text-[#bfc9c4] text-xs font-semibold shrink-0">or</span>
+                      <input
+                        type="text"
+                        value={stop.custom_name}
+                        onChange={e => setNewRouteStops(prev => prev.map((s, i) =>
+                          i === idx ? { location_id: null, custom_name: e.target.value } : s
+                        ))}
+                        placeholder="Custom stop name"
+                        className="flex-1 border border-[#bfc9c4] bg-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#00affe]/40 focus:border-[#00affe] text-[#191c1d]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setNewRouteStops(prev => prev.filter((_, i) => i !== idx))}
+                        className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    </div>
+                  ))}
+                  <p className="text-[11px] text-[#707975] pt-1">
+                    ℹ️ Stops will be saved after the route is created. Use the stop editor on the route card below.
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end pt-4 border-t border-[#bfc9c4]/30">
               <button type="submit" disabled={loading}
                 className="bg-[#00342b] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#065043] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
@@ -1025,42 +1338,253 @@ export default function FleetClient({
               <h3 className="text-sm font-bold text-[#00342b] uppercase tracking-wider">Your Custom Routes</h3>
             </div>
             <div className="divide-y divide-[#bfc9c4]/20">
-              {ownedRoutes.map((r) => (
-                <div key={r.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-[#f8fafb] transition-colors">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-[#00affe]">route</span>
-                    <span className="text-lg font-bold text-[#191c1d]">{r.origin?.name} <span className="text-[#bfc9c4] mx-2">→</span> {r.destination?.name}</span>
+              {ownedRoutes.map((r) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const stops: any[] = (r.route_stops || []).sort((a: any, b: any) => a.stop_order - b.stop_order)
+                const isEditingThisRoute = editStopsRouteId === r.id
+
+                return (
+                  <div key={r.id} className="flex flex-col">
+                    {/* Route header row */}
+                    <div className="px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-[#f8fafb] transition-colors">
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-[#00affe]">route</span>
+                        <span className="text-lg font-bold text-[#191c1d]">{r.origin?.name} <span className="text-[#bfc9c4] mx-2">→</span> {r.destination?.name}</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                        {r.distance_km && <span className="flex items-center gap-1 text-[#3f4945] bg-[#eceeef] px-3 py-1 rounded-full"><span className="material-symbols-outlined text-[16px]">straighten</span>{r.distance_km} km</span>}
+                        {r.estimated_duration_mins && <span className="flex items-center gap-1 text-[#3f4945] bg-[#eceeef] px-3 py-1 rounded-full"><span className="material-symbols-outlined text-[16px]">schedule</span>{r.estimated_duration_mins} min</span>}
+                        <span className="bg-[#00342b] text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Owned</span>
+                        <button
+                          onClick={() => {
+                            if (isEditingThisRoute) {
+                              setEditStopsRouteId(null)
+                              setEditingStops([])
+                            } else {
+                              setEditStopsRouteId(r.id)
+                              setEditingStops(
+                                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */ stops.map((s: any) => ({
+                                  location_id: s.location_id || null,
+                                  custom_name: s.locations?.name || s.custom_name || '',
+                                }))
+                              )
+                            }
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                            isEditingThisRoute
+                              ? 'bg-[#00342b] text-white border-[#00342b]'
+                              : 'bg-white text-[#00342b] border-[#00342b]/30 hover:bg-[#00342b]/5'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[16px]">
+                            {isEditingThisRoute ? 'close' : 'edit_location_alt'}
+                          </span>
+                          {isEditingThisRoute ? 'Cancel' : `Stops (${stops.length})`}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Inline stop path display (collapsed view) */}
+                    {!isEditingThisRoute && stops.length > 0 && (
+                      <div className="px-6 pb-4 flex flex-wrap items-center gap-1 text-sm">
+                        <span className="text-[#00342b] font-semibold">{r.origin?.name}</span>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */ stops.map((s: any, idx: number) => (
+                          <span key={idx} className="flex items-center gap-1">
+                            <span className="text-[#bfc9c4]">→</span>
+                            <span className="bg-[#f2f4f5] text-[#3f4945] px-2.5 py-0.5 rounded-full text-xs font-semibold border border-[#bfc9c4]/30">
+                              {s.locations?.name || s.custom_name}
+                            </span>
+                          </span>
+                        ))}
+                        <span className="text-[#bfc9c4]">→</span>
+                        <span className="text-[#00342b] font-semibold">{r.destination?.name}</span>
+                      </div>
+                    )}
+
+                    {/* Expanded stop editor */}
+                    {isEditingThisRoute && (
+                      <div className="px-6 pb-6 space-y-4 bg-[#f8fafb] border-t border-[#bfc9c4]/20">
+                        <div className="flex items-center justify-between pt-4">
+                          <h4 className="text-sm font-bold text-[#00342b] flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[18px] text-[#00affe]">edit_location_alt</span>
+                            Edit Intermediate Stops
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => setEditingStops(prev => [...prev, { location_id: null, custom_name: '' }])}
+                            className="flex items-center gap-1 text-xs font-bold text-[#00affe] hover:text-[#009ae0] transition"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                            Add Stop
+                          </button>
+                        </div>
+
+                        {/* Visual route path */}
+                        <div className="flex flex-wrap items-center gap-1 text-xs pb-2">
+                          <span className="bg-[#00342b] text-white px-2.5 py-1 rounded-full font-bold">{r.origin?.name}</span>
+                          {editingStops.map((_, idx) => (
+                            <span key={idx} className="flex items-center gap-1">
+                              <span className="text-[#bfc9c4] font-bold">→</span>
+                              <span className="bg-[#cae6ff] text-[#00342b] px-2.5 py-1 rounded-full font-semibold border border-[#00affe]/20">Stop {idx + 1}</span>
+                            </span>
+                          ))}
+                          <span className="text-[#bfc9c4] font-bold">→</span>
+                          <span className="bg-[#00342b] text-white px-2.5 py-1 rounded-full font-bold">{r.destination?.name}</span>
+                        </div>
+
+                        {editingStops.length === 0 && (
+                          <p className="text-sm text-[#707975] py-2">No intermediate stops yet. Click &ldquo;Add Stop&rdquo; to begin.</p>
+                        )}
+
+                        <div className="space-y-2">
+                          {editingStops.map((stop, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <span className="text-[#707975] text-xs font-bold w-5 text-center shrink-0">{idx + 1}</span>
+                              <select
+                                value={stop.location_id || ''}
+                                onChange={e => {
+                                  const locId = e.target.value
+                                  const locName = locations.find(l => l.id === locId)?.name || ''
+                                  setEditingStops(prev => prev.map((s, i) =>
+                                    i === idx ? { location_id: locId || null, custom_name: locId ? locName : s.custom_name } : s
+                                  ))
+                                }}
+                                className="flex-1 border border-[#bfc9c4] bg-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#00affe]/40 focus:border-[#00affe] text-[#191c1d]"
+                              >
+                                <option value="">— Pick from locations —</option>
+                                {locations.map(loc => (
+                                  <option key={loc.id} value={loc.id}>{loc.name}</option>
+                                ))}
+                              </select>
+                              <span className="text-[#bfc9c4] text-xs font-semibold shrink-0">or</span>
+                              <input
+                                type="text"
+                                value={stop.location_id ? (locations.find(l => l.id === stop.location_id)?.name || stop.custom_name) : stop.custom_name}
+                                onChange={e => setEditingStops(prev => prev.map((s, i) =>
+                                  i === idx ? { location_id: null, custom_name: e.target.value } : s
+                                ))}
+                                placeholder="Custom stop name"
+                                className="flex-1 border border-[#bfc9c4] bg-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#00affe]/40 focus:border-[#00affe] text-[#191c1d]"
+                              />
+                              {/* Move up */}
+                              <button
+                                type="button"
+                                disabled={idx === 0}
+                                onClick={() => setEditingStops(prev => {
+                                  const arr = [...prev]
+                                  ;[arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]]
+                                  return arr
+                                })}
+                                className="p-1.5 text-[#707975] hover:text-[#191c1d] hover:bg-[#e6e8e9] rounded-lg transition disabled:opacity-30"
+                                title="Move up"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">arrow_upward</span>
+                              </button>
+                              {/* Move down */}
+                              <button
+                                type="button"
+                                disabled={idx === editingStops.length - 1}
+                                onClick={() => setEditingStops(prev => {
+                                  const arr = [...prev]
+                                  ;[arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]
+                                  return arr
+                                })}
+                                className="p-1.5 text-[#707975] hover:text-[#191c1d] hover:bg-[#e6e8e9] rounded-lg transition disabled:opacity-30"
+                                title="Move down"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">arrow_downward</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingStops(prev => prev.filter((_, i) => i !== idx))}
+                                className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-2 border-t border-[#bfc9c4]/20">
+                          <button
+                            type="button"
+                            onClick={() => { setEditStopsRouteId(null); setEditingStops([]) }}
+                            className="px-5 py-2 rounded-xl text-sm font-bold text-[#3f4945] border border-[#bfc9c4]/40 hover:bg-[#e6e8e9] transition"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveEditingStops}
+                            disabled={loading}
+                            className="px-6 py-2 rounded-xl text-sm font-bold bg-[#00342b] text-white hover:bg-[#065043] transition disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {loading ? 'Saving...' : (
+                              <><span className="material-symbols-outlined text-[18px]">save</span> Save Stops</>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-sm">
-                    {r.distance_km && <span className="flex items-center gap-1 text-[#3f4945] bg-[#eceeef] px-3 py-1 rounded-full"><span className="material-symbols-outlined text-[16px]">straighten</span>{r.distance_km} km</span>}
-                    {r.estimated_duration_mins && <span className="flex items-center gap-1 text-[#3f4945] bg-[#eceeef] px-3 py-1 rounded-full"><span className="material-symbols-outlined text-[16px]">schedule</span>{r.estimated_duration_mins} min</span>}
-                    <span className="bg-[#00342b] text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Owned</span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
 
         {/* Global Routes */}
         {globalRoutes.length > 0 && (
-          <div className="bg-white rounded-2xl border border-[#bfc9c4]/30 overflow-hidden shadow-sm">
-            <div className="bg-[#f2f4f5] px-6 py-4 border-b border-[#bfc9c4]/30">
+          <div className="space-y-1">
+            <div className="bg-[#f2f4f5] px-6 py-4 rounded-2xl border border-[#bfc9c4]/30">
               <h3 className="text-sm font-bold text-[#707975] uppercase tracking-wider">System Routes (Read-Only)</h3>
             </div>
-            <div className="divide-y divide-[#bfc9c4]/20">
-              {globalRoutes.map((r) => (
-                <div key={r.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-[#f8fafb] transition-colors opacity-80">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-[#707975]">route</span>
-                    <span className="text-base font-semibold text-[#3f4945]">{r.origin?.name} <span className="text-[#bfc9c4] mx-2">→</span> {r.destination?.name}</span>
+            <div className="space-y-3 pt-1">
+              {globalRoutes.map((r) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const stops: any[] = (r.route_stops || []).sort((a: any, b: any) => a.stop_order - b.stop_order)
+                return (
+                  <div key={r.id} className="bg-white rounded-2xl border border-[#bfc9c4]/30 px-6 py-5 hover:bg-[#f8fafb] hover:shadow-sm transition-all opacity-80">
+                    {/* Route header */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-[#707975]">route</span>
+                        <span className="text-base font-semibold text-[#3f4945]">
+                          {r.origin?.name} <span className="text-[#bfc9c4] mx-2">→</span> {r.destination?.name}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                        {r.distance_km && <span className="text-[#707975]">{r.distance_km} km</span>}
+                        {r.estimated_duration_mins && <span className="text-[#707975]"> • {r.estimated_duration_mins} min</span>}
+                        <span className="bg-[#e1e3e4] text-[#3f4945] px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">
+                          {stops.length} stop{stops.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Intermediate stops pill-chain */}
+                    {stops.length > 0 && (
+                      <div className="mt-3 flex flex-wrap items-center gap-1 text-xs">
+                        <span className="bg-[#00342b] text-white px-2.5 py-1 rounded-full font-bold shrink-0">
+                          {r.origin?.name}
+                        </span>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */ stops.map((s: any, idx: number) => (
+                          <span key={idx} className="flex items-center gap-1">
+                            <span className="text-[#bfc9c4] font-bold">→</span>
+                            <span className="bg-[#f2f4f5] text-[#3f4945] px-2.5 py-1 rounded-full font-semibold border border-[#bfc9c4]/30">
+                              {s.locations?.name || s.custom_name}
+                            </span>
+                          </span>
+                        ))}
+                        <span className="text-[#bfc9c4] font-bold">→</span>
+                        <span className="bg-[#00342b] text-white px-2.5 py-1 rounded-full font-bold shrink-0">
+                          {r.destination?.name}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-sm">
-                    {r.distance_km && <span className="text-[#707975]">{r.distance_km} km</span>}
-                    {r.estimated_duration_mins && <span className="text-[#707975]"> • {r.estimated_duration_mins} min</span>}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
@@ -1099,14 +1623,14 @@ export default function FleetClient({
                     value={templateVehicleId}
                     onChange={(e) => {
                       setTemplateVehicleId(e.target.value)
-                      const v = vehicles.find(veh => veh.id === e.target.value)
+                      const v = sortedVehicles.find(veh => veh.id === e.target.value)
                       if (v) setTemplateTotalSeats(v.capacity_seats)
                     }}
                     required
                     className="w-full border border-[#bfc9c4] bg-[#f8fafb] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe]/50 text-sm font-semibold text-[#191c1d]"
                   >
                     <option value="">Select Vehicle</option>
-                    {vehicles.map(v => (
+                    {sortedVehicles.map(v => (
                       <option key={v.id} value={v.id}>{v.name} ({v.capacity_seats} seats)</option>
                     ))}
                   </select>

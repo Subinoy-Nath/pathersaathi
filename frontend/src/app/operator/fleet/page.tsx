@@ -25,15 +25,19 @@ export default async function FleetPage() {
   }
 
   // 2. Fetch operator's vehicles
-  const { data: vehicles } = await supabase
+  const { data: rawVehicles } = await supabase
     .from('vehicles')
     .select('*')
     .eq('owner_id', user.id)
     .is('deleted_at', null)
-    .order('created_at', { ascending: false })
+    .order('name', { ascending: true })
+
+  const vehicles = (rawVehicles || []).sort((a, b) =>
+    (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' })
+  )
 
   // 3. Fetch operator's routes (owner_id = auth.uid())
-  const { data: ownedRoutes } = await supabase
+  const { data: ownedRoutesRaw } = await supabase
     .from('routes')
     .select(`
       id,
@@ -51,7 +55,7 @@ export default async function FleetPage() {
     .order('created_at', { ascending: false })
 
   // 4. Also fetch global routes (owner_id IS NULL) for selection in schedules
-  const { data: globalRoutes } = await supabase
+  const { data: globalRoutesRaw } = await supabase
     .from('routes')
     .select(`
       id,
@@ -67,6 +71,44 @@ export default async function FleetPage() {
     .is('owner_id', null)
     .is('deleted_at', null)
     .eq('is_active', true)
+
+  // 4b. Fetch route stops separately — isolated so a missing migration never
+  //     breaks the routes display. Silently falls back to empty if table missing.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let stopsMap: Record<string, any[]> = {}
+  try {
+    const allRouteIds = [
+      ...(ownedRoutesRaw || []).map(r => r.id),
+      ...(globalRoutesRaw || []).map(r => r.id),
+    ]
+    if (allRouteIds.length > 0) {
+      const { data: stopsData } = await supabase
+        .from('route_stops')
+        .select('id, route_id, location_id, custom_name, stop_order, locations ( name )')
+        .in('route_id', allRouteIds)
+        .order('stop_order', { ascending: true })
+
+      if (stopsData) {
+        for (const stop of stopsData) {
+          if (!stopsMap[stop.route_id]) stopsMap[stop.route_id] = []
+          stopsMap[stop.route_id].push(stop)
+        }
+      }
+    }
+  } catch {
+    // route_stops table may not exist yet (pending migration) — degrade gracefully
+    stopsMap = {}
+  }
+
+  // Merge stops back onto routes
+  const ownedRoutes = (ownedRoutesRaw || []).map(r => ({
+    ...r,
+    route_stops: stopsMap[r.id] || [],
+  }))
+  const globalRoutes = (globalRoutesRaw || []).map(r => ({
+    ...r,
+    route_stops: stopsMap[r.id] || [],
+  }))
 
   // 5. Fetch all locations for dropdowns
   const { data: locations } = await supabase
@@ -125,11 +167,13 @@ export default async function FleetPage() {
         template_id,
         vehicle_id,
         route_id,
+        station_times,
         vehicles ( name, registration_number ),
         routes (
           origin:locations!routes_origin_id_fkey ( name ),
           destination:locations!routes_destination_id_fkey ( name )
-        )
+        ),
+        recurring_schedule_templates ( days_of_week )
       `)
       .in('vehicle_id', vehicleIds)
       .is('deleted_at', null)

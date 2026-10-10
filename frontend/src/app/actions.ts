@@ -29,20 +29,45 @@ export async function searchSchedules(pickupId: string, destinationId: string, t
     return { success: false, error: 'Please fill in all required fields.' }
   }
 
-  // Find Route
+  // Find Valid Routes (including intermediate stops)
   const { data: routes, error: routeError } = await supabase
     .from('routes')
-    .select('id')
-    .eq('origin_id', pickupId)
-    .eq('destination_id', destinationId)
+    .select(`
+      id,
+      origin_id,
+      destination_id,
+      route_stops ( location_id, stop_order )
+    `)
     .eq('is_active', true)
-    .is('deleted_at', null)
+    .is('deleted_at', null);
 
   if (routeError || !routes || routes.length === 0) {
-    return { success: false, error: 'No active route found for these locations.' }
+    return { success: false, error: 'No active routes found.' }
   }
 
-  const routeId = routes[0].id
+  const validRouteIds = routes.filter(route => {
+    let pickupOrder = -1;
+    let destOrder = -1;
+
+    if (route.origin_id === pickupId) pickupOrder = 0;
+    if (route.destination_id === pickupId) pickupOrder = 999999;
+    
+    if (route.origin_id === destinationId) destOrder = 0;
+    if (route.destination_id === destinationId) destOrder = 999999;
+
+    if (route.route_stops && route.route_stops.length > 0) {
+      route.route_stops.forEach((stop: { location_id: string | null; stop_order: number }) => {
+        if (stop.location_id === pickupId) pickupOrder = stop.stop_order;
+        if (stop.location_id === destinationId) destOrder = stop.stop_order;
+      });
+    }
+
+    return pickupOrder !== -1 && destOrder !== -1 && pickupOrder < destOrder;
+  }).map(r => r.id);
+
+  if (validRouteIds.length === 0) {
+    return { success: false, error: 'No active route found for these locations.' }
+  }
   const travelDateObj = new Date(travelDate)
   
   if (isNaN(travelDateObj.getTime())) {
@@ -60,9 +85,9 @@ export async function searchSchedules(pickupId: string, destinationId: string, t
       arrival_time, 
       available_seats, 
       base_fare,
-      vehicles(name, registration_number)
+      vehicles(name, registration_number, features)
     `)
-    .eq('route_id', routeId)
+    .in('route_id', validRouteIds)
     .eq('status', 'scheduled')
     .is('deleted_at', null)
     .gte('departure_time', travelDateObj.toISOString())
@@ -80,7 +105,7 @@ export async function searchSchedules(pickupId: string, destinationId: string, t
     const { data: routeAlerts } = await supabase
       .from('broadcast_notifications')
       .select('id, title, message, severity, alert_type')
-      .eq('route_id', routeId)
+      .in('route_id', validRouteIds)
       .eq('is_active', true)
       .lte('starts_at', nowIso)
       .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
@@ -99,7 +124,7 @@ export async function searchSchedules(pickupId: string, destinationId: string, t
     const { data: pausedSchedules } = await supabase
       .from('schedules')
       .select('id, pause_reason, status, departure_time, vehicles(name)')
-      .eq('route_id', routeId)
+      .in('route_id', validRouteIds)
       .in('status', ['paused', 'cancelled'])
       .is('deleted_at', null)
       .gte('departure_time', travelDateObj.toISOString())
@@ -117,7 +142,35 @@ export async function searchSchedules(pickupId: string, destinationId: string, t
     return { success: false, error: 'No buses with enough available seats for this route on the selected date.' }
   }
 
-  return { success: true, schedules }
+  // Lookup dynamic fares
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: dynamicFares } = await (supabase as any)
+    .from('fares')
+    .select('is_ac, fare_amount')
+    .eq('origin_id', pickupId)
+    .eq('destination_id', destinationId) as { data: { is_ac: boolean; fare_amount: number }[] | null };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const formattedSchedules = schedules.map((schedule: any) => {
+    const features = schedule.vehicles?.features || "";
+    const isAc = features.includes("AC") && !features.includes("Non-AC");
+    
+    let base_fare = schedule.base_fare;
+    if (dynamicFares && dynamicFares.length > 0) {
+      const matchingFare = dynamicFares.find(f => f.is_ac === isAc);
+      if (matchingFare) {
+        base_fare = matchingFare.fare_amount;
+      }
+    }
+    
+    return {
+      ...schedule,
+      vehicles: schedule.vehicles ? { ...schedule.vehicles, is_ac: isAc } : null,
+      base_fare
+    };
+  });
+
+  return { success: true, schedules: formattedSchedules }
 }
 
 export async function createTicketBooking(formData: FormData) {
@@ -340,13 +393,17 @@ export interface TodayScheduleItem {
     name: string
     registration_number: string | null
     image_url: string | null
+    features?: string | null
+    is_ac?: boolean
   } | null
+  station_times?: any[] | null
   routes: {
     id?: string
     distance_km: number | null
     estimated_duration_mins: number | null
     origin: { id?: string; name: string } | null
     destination: { id?: string; name: string } | null
+    route_stops?: { stop_order: number; custom_name?: string; location?: { name: string } }[] | null
   } | null
 }
 
@@ -398,18 +455,21 @@ export async function getTodaySchedules(): Promise<{
       base_fare,
       status,
       pause_reason,
+      station_times,
       vehicles (
         id,
         name,
         registration_number,
-        image_url
+        image_url,
+        features
       ),
       routes (
         id,
         distance_km,
         estimated_duration_mins,
         origin:locations!routes_origin_id_fkey ( id, name ),
-        destination:locations!routes_destination_id_fkey ( id, name )
+        destination:locations!routes_destination_id_fkey ( id, name ),
+        route_stops ( stop_order, custom_name, location:locations ( name ) )
       )
     `)
     .is('deleted_at', null)
@@ -436,18 +496,21 @@ export async function getTodaySchedules(): Promise<{
       base_fare,
       status,
       pause_reason,
+      station_times,
       vehicles (
         id,
         name,
         registration_number,
-        image_url
+        image_url,
+        features
       ),
       routes (
         id,
         distance_km,
         estimated_duration_mins,
         origin:locations!routes_origin_id_fkey ( id, name ),
-        destination:locations!routes_destination_id_fkey ( id, name )
+        destination:locations!routes_destination_id_fkey ( id, name ),
+        route_stops ( stop_order, custom_name, location:locations ( name ) )
       )
     `)
     .is('deleted_at', null)
@@ -486,6 +549,13 @@ export async function getTodaySchedules(): Promise<{
     }
     return new Date(a.departure_time).getTime() - new Date(b.departure_time).getTime()
   })
+
+  sortedSchedules.forEach(schedule => {
+    if (schedule.vehicles) {
+      const features = schedule.vehicles.features || "";
+      schedule.vehicles.is_ac = features.includes("AC") && !features.includes("Non-AC");
+    }
+  });
 
   return {
     success: true,

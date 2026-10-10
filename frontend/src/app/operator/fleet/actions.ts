@@ -197,7 +197,72 @@ export async function upsertRoute(formData: FormData) {
 }
 
 /**
- * Upsert a single or repeating schedule manually. Validates vehicle ownership before insert.
+ * Replace all intermediate stops for a route.
+ * Deletes existing stops then inserts the new ordered list atomically.
+ * Each stop must have either a location_id (from the locations table) or a custom_name.
+ */
+export async function upsertRouteStops(
+  routeId: string,
+  stops: Array<{ location_id?: string | null; custom_name?: string | null }>
+) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { success: false, error: 'You must be logged in.' }
+  }
+
+  // Verify the caller owns this route
+  const { data: route } = await supabase
+    .from('routes')
+    .select('owner_id')
+    .eq('id', routeId)
+    .single()
+
+  if (!route) {
+    return { success: false, error: 'Route not found.' }
+  }
+  if (route.owner_id !== user.id) {
+    return { success: false, error: 'You can only edit stops on routes you own.' }
+  }
+
+  // Delete all existing stops for this route first
+  const { error: deleteError } = await supabase
+    .from('route_stops')
+    .delete()
+    .eq('route_id', routeId)
+
+  if (deleteError) {
+    return { success: false, error: 'Failed to clear existing stops: ' + deleteError.message }
+  }
+
+  // Insert new stops if any
+  if (stops.length > 0) {
+    const rows = stops.map((s, idx) => ({
+      route_id: routeId,
+      location_id: s.location_id || null,
+      custom_name: s.custom_name?.trim() || null,
+      stop_order: idx + 1,
+    }))
+
+    const { error: insertError } = await supabase
+      .from('route_stops')
+      .insert(rows)
+
+    if (insertError) {
+      return { success: false, error: 'Failed to save stops: ' + insertError.message }
+    }
+  }
+
+  revalidatePath('/operator/fleet')
+  return { success: true }
+}
+
+
+/**
+ * Create a daily schedule run with per-station arrival times.
+ * This now automatically creates a Recurring Template (running all 7 days)
+ * and materializes the schedules via the rolling engine, achieving the "Runs Daily" realtime update.
  */
 export async function upsertSchedule(formData: FormData) {
   const supabase = await createClient()
@@ -219,16 +284,30 @@ export async function upsertSchedule(formData: FormData) {
 
   const vehicle_id = formData.get('vehicle_id') as string
   const route_id = formData.get('route_id') as string
-  const departure_time = formData.get('departure_time') as string
-  const arrival_time = formData.get('arrival_time') as string
   const total_seats_str = formData.get('total_seats') as string
-  const base_fare_str = formData.get('base_fare') as string
+  const station_times_str = formData.get('station_times') as string
 
-  if (!vehicle_id || !route_id || !departure_time || !arrival_time || !total_seats_str) {
+  if (!vehicle_id || !route_id || !total_seats_str || !station_times_str) {
     return { success: false, error: 'All required fields must be filled.' }
   }
 
-  // Verify vehicle ownership
+  let station_times: Array<{ name: string; stop_order: number; time: string }>
+  try {
+    station_times = JSON.parse(station_times_str)
+  } catch {
+    return { success: false, error: 'Invalid station times data.' }
+  }
+
+  if (!Array.isArray(station_times) || station_times.length < 2) {
+    return { success: false, error: 'At least origin and destination times are required.' }
+  }
+
+  for (const st of station_times) {
+    if (!st.time || !/^\d{2}:\d{2}$/.test(st.time)) {
+      return { success: false, error: `Please provide a valid time (HH:MM) for "${st.name}".` }
+    }
+  }
+
   const { data: vehicle } = await supabase
     .from('vehicles')
     .select('owner_id, capacity_seats')
@@ -244,49 +323,39 @@ export async function upsertSchedule(formData: FormData) {
     return { success: false, error: `Total seats must be between 1 and ${vehicle.capacity_seats}.` }
   }
 
-  const departureDate = new Date(departure_time)
-  const arrivalDate = new Date(arrival_time)
+  const originTime = station_times[0].time
+  const destTime = station_times[station_times.length - 1].time
 
-  if (isNaN(departureDate.getTime()) || isNaN(arrivalDate.getTime())) {
-    return { success: false, error: 'Invalid departure or arrival time.' }
+  // Calculate estimated duration in minutes
+  const todayStr = new Date().toISOString().split('T')[0]
+  const departureDate = new Date(`${todayStr}T${originTime}:00`)
+  let arrivalDate = new Date(`${todayStr}T${destTime}:00`)
+  if (arrivalDate <= departureDate) {
+    arrivalDate = new Date(arrivalDate.getTime() + 24 * 60 * 60 * 1000)
   }
+  const estimated_duration_mins = Math.round((arrivalDate.getTime() - departureDate.getTime()) / 60000)
 
-  if (departureDate >= arrivalDate) {
-    return { success: false, error: 'Departure must be before arrival.' }
-  }
-
-  const base_fare = base_fare_str ? parseFloat(base_fare_str) : null
-  const repeat_days_str = formData.get('repeat_days') as string
-  const repeat_days = repeat_days_str ? parseInt(repeat_days_str) : 1
-
-  if (isNaN(repeat_days) || repeat_days < 1 || repeat_days > 30) {
-    return { success: false, error: 'Repeat days must be between 1 and 30.' }
-  }
-
-  const schedulesToInsert = []
-  
-  for (let i = 0; i < repeat_days; i++) {
-    const iterDeparture = new Date(departureDate.getTime() + i * 24 * 60 * 60 * 1000)
-    const iterArrival = new Date(arrivalDate.getTime() + i * 24 * 60 * 60 * 1000)
-    
-    schedulesToInsert.push({
+  // Insert as a daily recurring template
+  const { error: insertError } = await supabase
+    .from('recurring_schedule_templates')
+    .insert({
+      operator_id: user.id,
       vehicle_id,
       route_id,
-      departure_time: iterDeparture.toISOString(),
-      arrival_time: iterArrival.toISOString(),
+      departure_time: `${originTime}:00`,
+      estimated_duration_mins,
+      days_of_week: [0, 1, 2, 3, 4, 5, 6], // Runs Daily
+      base_fare: 0, // Not used
       total_seats,
-      available_seats: total_seats,
-      base_fare,
-      status: 'scheduled',
+      station_times,
     })
+
+  if (insertError) {
+    return { success: false, error: 'Failed to create daily schedule rule: ' + insertError.message }
   }
 
-  const { error: rpcError } = await supabase
-    .rpc('upsert_schedules', { p_schedules: schedulesToInsert })
-
-  if (rpcError) {
-    return { success: false, error: 'Failed to create schedule(s): ' + rpcError.message }
-  }
+  // Trigger realtime materialization for the newly added daily schedule
+  await supabase.rpc('generate_rolling_schedules', { p_days_ahead: 14 })
 
   revalidatePath('/operator/fleet')
   revalidatePath('/operator')
@@ -710,4 +779,130 @@ export async function triggerRollingSchedules() {
 
   revalidatePath('/operator/fleet')
   return { success: true, result: data }
+}
+
+/**
+ * Deletes/clears a single schedule run.
+ */
+export async function deleteScheduleRun(scheduleId: string) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { success: false, error: 'You must be logged in.' }
+  }
+
+  // 1. Try atomic RPC
+  const { error: rpcError } = await supabase.rpc('delete_single_schedule_run', {
+    p_schedule_id: scheduleId
+  })
+
+  if (!rpcError) {
+    revalidatePath('/operator/fleet')
+    revalidatePath('/operator')
+    revalidatePath('/')
+    return { success: true, message: 'Schedule removed.' }
+  }
+
+  // 2. Direct update fallback (for existing databases prior to migration)
+  const now = new Date().toISOString()
+  const { error: updateError } = await supabase
+    .from('schedules')
+    .update({
+      deleted_at: now,
+      status: 'cancelled',
+      cancelled_at: now,
+      cancelled_by: user.id,
+      pause_reason: 'Cancelled by operator',
+      updated_at: now
+    })
+    .eq('id', scheduleId)
+
+  if (updateError) {
+    return { success: false, error: 'Failed to delete schedule: ' + (rpcError?.message || updateError.message) }
+  }
+
+  // Deactivate broadcast notifications attached to this schedule
+  await supabase
+    .from('broadcast_notifications')
+    .update({
+      is_active: false,
+      updated_at: now
+    })
+    .eq('schedule_id', scheduleId)
+
+  revalidatePath('/operator/fleet')
+  revalidatePath('/operator')
+  revalidatePath('/')
+  return { success: true, message: 'Schedule removed.' }
+}
+
+/**
+ * Clears/soft-deletes ALL scheduled runs for the operator's fleet.
+ */
+export async function clearAllScheduledRuns() {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { success: false, error: 'You must be logged in.' }
+  }
+
+  // 1. Get operator's vehicle IDs
+  const { data: vehicles } = await supabase
+    .from('vehicles')
+    .select('id')
+    .eq('owner_id', user.id)
+    .is('deleted_at', null)
+
+  const vehicleIds = vehicles?.map(v => v.id) || []
+  if (vehicleIds.length === 0) {
+    return { success: true, message: 'No vehicles found to clear.' }
+  }
+
+  // 2. Try atomic RPC
+  const { error: rpcError } = await supabase.rpc('clear_operator_schedules', {
+    p_vehicle_ids: vehicleIds
+  })
+
+  if (!rpcError) {
+    revalidatePath('/operator/fleet')
+    revalidatePath('/operator')
+    revalidatePath('/')
+    return { success: true, message: 'All scheduled departures have been successfully cleared.' }
+  }
+
+  // 3. Direct update fallback
+  const now = new Date().toISOString()
+  const { error: updateError } = await supabase
+    .from('schedules')
+    .update({
+      deleted_at: now,
+      status: 'cancelled',
+      cancelled_at: now,
+      cancelled_by: user.id,
+      pause_reason: 'Batch cleared by operator',
+      updated_at: now
+    })
+    .in('vehicle_id', vehicleIds)
+    .is('deleted_at', null)
+
+  if (updateError) {
+    return { success: false, error: 'Failed to clear scheduled runs: ' + (rpcError?.message || updateError.message) }
+  }
+
+  // Deactivate all associated broadcast alerts for operator
+  await supabase
+    .from('broadcast_notifications')
+    .update({
+      is_active: false,
+      updated_at: now
+    })
+    .eq('operator_id', user.id)
+    .eq('is_active', true)
+
+  revalidatePath('/operator/fleet')
+  revalidatePath('/operator')
+  revalidatePath('/')
+  return { success: true, message: 'All scheduled departures have been successfully cleared.' }
 }

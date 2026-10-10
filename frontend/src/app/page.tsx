@@ -14,7 +14,7 @@ export default async function Home({
 
   const [locationsResponse, vehiclesResponse, broadcastsResponse, { data: { user } }] = await Promise.all([
     supabase.from('locations').select('*').is('deleted_at', null).order('name'),
-    supabase.from('vehicles').select('*').is('deleted_at', null).eq('is_active', true),
+    supabase.from('vehicles').select('*').is('deleted_at', null).eq('is_active', true).order('name', { ascending: true }),
     supabase
       .from('broadcast_notifications')
       .select(`
@@ -51,7 +51,9 @@ export default async function Home({
   }
 
   const locations = locationsResponse.data || []
-  const vehicles = vehiclesResponse.data || []
+  const vehicles = (vehiclesResponse.data || []).sort((a, b) =>
+    (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' })
+  )
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const broadcasts = (broadcastsResponse.data || []) as any[]
 

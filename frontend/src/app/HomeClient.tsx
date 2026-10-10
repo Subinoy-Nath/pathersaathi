@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Database } from '@/types/database.types';
@@ -44,6 +44,12 @@ export default function HomeClient({
   const [heroTab, setHeroTab] = useState<'book' | 'track'>(initialTab);
   const currentUserRef = useRef<{ id: string; email?: string } | null>(initialUser || null);
 
+  const sortedVehicles = useMemo(() => {
+    return [...(vehicles || [])].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' })
+    );
+  }, [vehicles]);
+
   const switchHeroTab = (tab: 'book' | 'track') => {
     setHeroTab(tab);
     if (tab === 'track' && currentUserRef.current && (!todaySchedules || todaySchedules.length === 0)) {
@@ -74,12 +80,21 @@ export default function HomeClient({
     arrival_time: string;
     available_seats: number;
     base_fare: number | null;
-    vehicles: { name: string; registration_number: string | null } | null;
+    vehicles: { name: string; registration_number: string | null; is_ac?: boolean } | null;
   };
 
   const [availableSchedules, setAvailableSchedules] = useState<AvailableSchedule[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [searchParams, setSearchParams] = useState({ seats: '1', travelDate: '' });
+  
+  const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const [searchParams, setSearchParams] = useState({ seats: '1', travelDate: getTodayString() });
 
   const [busLoading, setBusLoading] = useState(false);
   const [busResult, setBusResult] = useState<BookingResult | null>(null);
@@ -455,17 +470,44 @@ export default function HomeClient({
                               <div className="flex items-start justify-between gap-2">
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <span className="font-bold text-[#00342b] text-base">{busName}</span>
+                                    <span className="font-bold text-[#00342b] text-base">{busName} {schedule.vehicles?.is_ac ? <span className="text-[10px] px-1 py-0.5 bg-blue-100 text-blue-800 rounded">AC</span> : <span className="text-[10px] px-1 py-0.5 bg-gray-100 text-gray-800 rounded">Non-AC</span>}</span>
                                     {regNo && (
                                       <span className="text-[10px] font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
                                         {regNo}
                                       </span>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-sm font-semibold text-[#00342b] mt-1">
-                                    <span>{origin}</span>
-                                    <span className="text-[#00affe] material-symbols-outlined text-[14px]">arrow_forward</span>
-                                    <span>{dest}</span>
+                                  <div className="w-full mt-3 flex flex-wrap items-center gap-1.5 p-2.5 bg-gray-50 border border-gray-100 rounded-xl">
+                                    {(() => {
+                                      let allStops = [];
+                                      if (schedule.station_times && schedule.station_times.length > 0) {
+                                        allStops = schedule.station_times;
+                                      } else {
+                                        const stops = schedule.routes?.route_stops || [];
+                                        allStops = [
+                                          { name: origin, time: depTimeStr },
+                                          ...stops.sort((a,b) => a.stop_order - b.stop_order).map(s => ({ name: s.location?.name || s.custom_name || 'Stop', time: '--:--' })),
+                                          { name: dest, time: !isNaN(new Date(schedule.arrival_time).getTime()) ? new Date(schedule.arrival_time).toLocaleTimeString('en-IN', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: true,
+                                  timeZone: 'Asia/Kolkata'
+                                }) : schedule.arrival_time }
+                                        ];
+                                      }
+
+                                      return allStops.map((st, idx) => (
+                                        <div key={idx} className="flex items-center gap-1.5">
+                                          <div className="flex flex-col items-center min-w-[40px]">
+                                            <span className="text-[11px] font-bold text-[#00342b] leading-tight text-center">{st.name}</span>
+                                            <span className="text-[9px] font-bold text-[#006493]">{st.time}</span>
+                                          </div>
+                                          {idx < allStops.length - 1 && (
+                                            <span className="material-symbols-outlined text-[14px] text-[#00affe]/50 -mt-2">arrow_forward</span>
+                                          )}
+                                        </div>
+                                      ));
+                                    })()}
                                   </div>
                                 </div>
 
@@ -502,15 +544,7 @@ export default function HomeClient({
                                 </div>
                               )}
 
-                              <div className="flex items-center justify-between pt-1 border-t border-gray-100 text-xs text-[#3f4945]">
-                                <div className="flex items-center gap-1 font-medium">
-                                  <span className="material-symbols-outlined text-[14px] text-[#006493]">schedule</span>
-                                  <span>Departs: <strong className="text-[#00342b]">{depTimeStr}</strong></span>
-                                </div>
-                                <div className={`font-medium ${schedule.available_seats > 0 ? 'text-green-700' : 'text-rose-600'}`}>
-                                  {schedule.available_seats > 0 ? `${schedule.available_seats} seats free` : 'Bus Full (Tracking Open)'}
-                                </div>
-                              </div>
+
 
                               {/* Action Button: Route to /bookings/track/[scheduleId] */}
                               <Link
@@ -657,7 +691,7 @@ export default function HomeClient({
                       <label htmlFor="travelDate" className="text-sm font-semibold text-[#3f4945] ml-1">Travel Date</label>
                       <div className="flex items-center gap-3 bg-white border border-[#bfc9c4] rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-[#00affe] transition-all overflow-hidden">
                         <span className="material-symbols-outlined text-[#006493]">calendar_today</span>
-                        <input id="travelDate" type="date" name="travelDate" required min={new Date().toISOString().split('T')[0]} className="bg-transparent border-none p-0 focus:ring-0 text-base w-full text-[#00342b] font-semibold outline-none" />
+                        <input id="travelDate" type="date" name="travelDate" defaultValue={getTodayString()} required min={new Date().toISOString().split('T')[0]} className="bg-transparent border-none p-0 focus:ring-0 text-base w-full text-[#00342b] font-semibold outline-none" />
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -707,7 +741,7 @@ export default function HomeClient({
                       return (
                         <div key={schedule.id} className="bg-white/80 border border-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div>
-                            <h4 className="font-bold text-[#00342b] text-lg">{busName}</h4>
+                            <h4 className="font-bold text-[#00342b] text-lg flex items-center gap-2">{busName} {schedule.vehicles?.is_ac ? <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">AC</span> : <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded">Non-AC</span>}</h4>
                             <div className="flex items-center gap-2 text-sm text-[#3f4945] mt-1">
                               <span className="font-semibold text-[#006493]">{depTime}</span>
                               <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -719,7 +753,7 @@ export default function HomeClient({
                           </div>
                           
                           <div className="flex flex-col items-end gap-2">
-                            <div className="text-xl font-bold text-[#00342b]">₹{schedule.base_fare}</div>
+                            <div className="text-xl font-bold text-[#00342b]">₹{(schedule.base_fare || 0) * parseInt(searchParams.seats || "1")}</div>
                             <form action={handleTicketBooking}>
                               <input type="hidden" name="scheduleId" value={schedule.id} />
                               <input type="hidden" name="seats" value={searchParams.seats} />
@@ -764,6 +798,7 @@ export default function HomeClient({
                   id="travelDate"
                   type="date"
                   name="travelDate"
+                  defaultValue={getTodayString()}
                   required
                   min={new Date().toISOString().split('T')[0]}
                   className="w-full border border-[#bfc9c4] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#00affe] bg-[#f8fafb]"
@@ -862,7 +897,7 @@ export default function HomeClient({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-32">
-            {vehicles.map((bus) => {
+            {sortedVehicles.map((bus) => {
               const selected = selectedBuses.includes(bus.id);
               return (
                 <div 

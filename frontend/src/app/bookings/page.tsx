@@ -23,8 +23,7 @@ export default async function BookingsPage() {
       status,
       schedule_id,
       travel_date,
-      start_date,
-      end_date,
+      occasion,
       seats_requested,
       operator_notes,
       schedules (
@@ -97,8 +96,16 @@ export default async function BookingsPage() {
 
               // Formatting dates and times
               const travelDateStr = booking.travel_date
-              const startDateObj = booking.start_date ? new Date(booking.start_date) : null
-              const endDateObj = booking.end_date ? new Date(booking.end_date) : null
+              let formattedDate = 'Unknown'
+              if (travelDateStr) {
+                const parts = travelDateStr.split('-').map(Number)
+                if (parts.length === 3 && !parts.some(isNaN)) {
+                  const d = new Date(parts[0], parts[1] - 1, parts[2])
+                  formattedDate = d.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })
+                } else {
+                  formattedDate = travelDateStr
+                }
+              }
               
               let formattedTime = 'Unknown'
               if (schedule?.departure_time) {
@@ -145,17 +152,15 @@ export default async function BookingsPage() {
                             </div>
                           </div>
                           <div>
-                            <div className="text-sm text-gray-500 mb-1">Start Date</div>
-                            <div className="font-semibold text-gray-900">
-                              {startDateObj ? startDateObj.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) : 'Unknown'}
-                            </div>
+                            <div className="text-sm text-gray-500 mb-1">Booking Date</div>
+                            <div className="font-semibold text-gray-900">{formattedDate}</div>
                           </div>
-                          <div>
-                            <div className="text-sm text-gray-500 mb-1">End Date</div>
-                            <div className="font-semibold text-gray-900">
-                              {endDateObj ? endDateObj.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) : 'Unknown'}
+                          {booking.occasion && (
+                            <div>
+                              <div className="text-sm text-gray-500 mb-1">Occasion / Purpose</div>
+                              <div className="font-semibold text-gray-900">{booking.occasion}</div>
                             </div>
-                          </div>
+                          )}
                         </>
                       ) : (
                         <>
@@ -169,7 +174,7 @@ export default async function BookingsPage() {
                           </div>
                           <div>
                             <div className="text-sm text-gray-500 mb-1">Departure</div>
-                            <div className="font-semibold text-gray-900">{travelDateStr} <span className="text-gray-500 ml-2">{formattedTime}</span></div>
+                            <div className="font-semibold text-gray-900">{formattedDate} <span className="text-gray-500 ml-2">{formattedTime}</span></div>
                           </div>
                           <div>
                             <div className="text-sm text-gray-500 mb-1">Seats Reserved</div>

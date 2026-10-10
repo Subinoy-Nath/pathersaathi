@@ -81,8 +81,7 @@ export default async function OperatorDashboard() {
         booking_type,
         status,
         travel_date,
-        start_date,
-        end_date,
+        occasion,
         seats_requested,
         updated_at,
         users!bookings_customer_id_fkey ( name, phone_number ),
@@ -103,8 +102,11 @@ export default async function OperatorDashboard() {
       .limit(50)
 
     // Construct the OR filter for schedule_id OR id in bvBookingIds
+    // NOTE: PostgREST in.() with UUIDs requires each value to be double-quoted
     if (scheduleIds.length > 0 && bvBookingIds.length > 0) {
-      query = query.or(`schedule_id.in.(${scheduleIds.join(',')}),id.in.(${bvBookingIds.join(',')})`)
+      const schedPart = `schedule_id.in.(${scheduleIds.map(id => `"${id}"`).join(',')})`
+      const bvPart = `id.in.(${bvBookingIds.map(id => `"${id}"`).join(',')})`
+      query = query.or(`${schedPart},${bvPart}`)
     } else if (scheduleIds.length > 0) {
       query = query.in('schedule_id', scheduleIds)
     } else if (bvBookingIds.length > 0) {
@@ -116,7 +118,8 @@ export default async function OperatorDashboard() {
     if (bookingsData && !error) {
       bookings = bookingsData
     } else {
-      console.error(error)
+      // PostgrestError has non-enumerable props — log them explicitly to avoid "{}" in console
+      console.error('[OperatorDashboard] Bookings query failed:', error?.message, '| code:', error?.code, '| details:', error?.details)
     }
   }
 
@@ -292,8 +295,6 @@ export default async function OperatorDashboard() {
                         const originName = sched?.routes?.origin?.name || 'Unknown'
                         const destName = sched?.routes?.destination?.name || 'Unknown'
 
-                        const startDateObj = b.start_date ? new Date(b.start_date) : null
-                        const endDateObj = b.end_date ? new Date(b.end_date) : null
 
                         let formattedTime = 'Unknown'
                         if (sched?.departure_time) {
@@ -347,14 +348,16 @@ export default async function OperatorDashboard() {
                             <td className="px-0 md:px-6 py-3 md:py-4 text-sm text-[#191c1d] block w-full md:table-cell border-b border-[#bfc9c4]/20 md:border-none">
                               <div className="md:hidden text-[10px] font-bold text-[#3f4945] uppercase tracking-wider mb-1">Date</div>
                               {isWholeVehicle ? (
-                                startDateObj && endDateObj ? (
-                                  <>
-                                    <div className="font-medium">Start: {startDateObj.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</div>
-                                    <div className="text-xs text-[#3f4945]">End: {endDateObj.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</div>
-                                  </>
-                                ) : (
-                                  <div className="font-medium">{b.travel_date}</div>
-                                )
+                                <>
+                                  <div className="font-medium">
+                                    {b.travel_date
+                                      ? new Date(b.travel_date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
+                                      : '—'}
+                                  </div>
+                                  {b.occasion && (
+                                    <div className="text-xs text-[#3f4945] mt-0.5 italic">{b.occasion}</div>
+                                  )}
+                                </>
                               ) : (
                                 <div className="font-medium">{b.travel_date}</div>
                               )}

@@ -377,9 +377,9 @@ export async function createWholeVehicleBooking(formData: FormData) {
       vehicle_names: vehicleNames,
       message: 'Whole vehicle booking submitted!'
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('CRITICAL ERROR inside createWholeVehicleBooking:', err);
-    throw err;
+    return { success: false, error: 'SERVER ERROR: ' + (err?.message || String(err)) };
   }
 }
 

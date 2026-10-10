@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef } from 'react'
 import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import { fetchRoadRoute } from '@/utils/fetchRoadRoute'
+// leaflet.css moved to globals.css to fix Next.js global CSS console error
 
 export interface MapPoint {
   name: string
@@ -67,17 +68,46 @@ export default function LeafletMapInner({
       attributionControl: true
     })
 
-    // OpenStreetMap tiles with network failure resilience
-    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // 1. Street View (OpenStreetMap)
+    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      attribution: '&copy; OpenStreetMap contributors'
     })
-    tileLayer.on('tileerror', () => {
-      // Gracefully handle tile loading failures without uncaught exceptions
+    streetLayer.on('tileerror', () => {}) // Graceful fallback
+
+    // 2. Satellite Hybrid View (Esri World Imagery + Labels + Roads)
+    const satelliteBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
     })
-    tileLayer.addTo(map)
+    const satelliteLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      pane: 'overlayPane' // Ensures labels stay on top
+    })
+    const satelliteRoads = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      pane: 'overlayPane' // Ensures roads stay on top
+    })
+    
+    // Group them so they toggle together as one option
+    const satelliteHybrid = L.layerGroup([satelliteBase, satelliteRoads, satelliteLabels])
+
+    // Add Street View as default
+    streetLayer.addTo(map)
+
+    // Add a layer control toggle to the map
+    const baseMaps = {
+      '🗺️ Street View': streetLayer,
+      '🛰️ Satellite View': satelliteHybrid
+    }
+    L.control.layers(baseMaps, undefined, { position: 'topleft' }).addTo(map)
 
     mapInstanceRef.current = map
+
+    // Force Leaflet to re-measure container after Next.js dynamic import paint
+    requestAnimationFrame(() => {
+      map.invalidateSize({ animate: false })
+    })
 
     return () => {
       map.remove()
@@ -91,10 +121,12 @@ export default function LeafletMapInner({
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Update Origin & Destination Markers and Planned Route Polyline
+  // Update Origin & Destination Markers and Planned Route Polyline (road-following via OSRM)
   useEffect(() => {
     const map = mapInstanceRef.current
     if (!map) return
+
+    let cancelled = false
 
     // Origin Marker (Teal Pin)
     if (routeOrigin && routeOrigin.lat && routeOrigin.lng) {
@@ -162,22 +194,49 @@ export default function LeafletMapInner({
       }
     }
 
-    // Planned Route connecting Origin -> Destination
+    // Planned Route connecting Origin -> Destination via OSRM road network
     if (routeOrigin && routeDestination && routeOrigin.lat && routeDestination.lat) {
-      const points: [number, number][] = [
+      // Draw a temporary straight dashed line immediately so the map shows something
+      // while the road route is being fetched in the background
+      const fallbackPoints: [number, number][] = [
         [routeOrigin.lat, routeOrigin.lng],
         [routeDestination.lat, routeDestination.lng]
       ]
       if (!plannedPolylineRef.current) {
-        plannedPolylineRef.current = L.polyline(points, {
-          color: '#004D40',
-          weight: 4,
+        plannedPolylineRef.current = L.polyline(fallbackPoints, {
+          color: '#0078FF', // Vibrant blue
+          weight: 5,
           dashArray: '6, 8',
           opacity: 0.6
         }).addTo(map)
       } else {
-        plannedPolylineRef.current.setLatLngs(points)
+        plannedPolylineRef.current.setLatLngs(fallbackPoints)
       }
+
+      // Fetch the road-following route from OSRM and replace the straight line
+      fetchRoadRoute(
+        { lat: routeOrigin.lat, lng: routeOrigin.lng },
+        { lat: routeDestination.lat, lng: routeDestination.lng }
+      ).then((roadCoords) => {
+        if (cancelled || !mapInstanceRef.current) return
+        if (roadCoords.length > 2) {
+          // More than 2 points means OSRM returned a real road path (not fallback)
+          if (plannedPolylineRef.current) {
+            plannedPolylineRef.current.setLatLngs(roadCoords)
+            // Switch from dashed to a solid road-style line
+            plannedPolylineRef.current.setStyle({
+              dashArray: undefined,
+              opacity: 0.85,
+              weight: 5,
+              color: '#0078FF'
+            })
+          }
+        }
+      })
+    }
+
+    return () => {
+      cancelled = true
     }
   }, [routeOrigin, routeDestination, passengerPickup])
 
@@ -282,9 +341,15 @@ export default function LeafletMapInner({
   }
 
   return (
-    <div className="relative w-full h-[450px] sm:h-[500px] rounded-2xl overflow-hidden bg-[#001712]">
+    <div
+      className="relative w-full rounded-2xl overflow-hidden bg-[#001712]"
+      style={{ height: '450px' }}
+    >
       {/* Map Surface Container */}
-      <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
+      <div
+        ref={mapContainerRef}
+        style={{ width: '100%', height: '100%', zIndex: 1 }}
+      />
 
       {/* Map Overlay Controls */}
       <div className="absolute top-4 right-4 z-[500] flex flex-col gap-2">

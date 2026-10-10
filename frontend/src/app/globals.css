@@ -1,4 +1,21 @@
+@import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
+
+/* 
+  CRITICAL LEAFLET FIXES
+  Tailwind 4 CSS reset sets img { max-width: 100%; height: auto; } and svg { display: block } 
+  which completely breaks Leaflet tiles and marker alignments.
+*/
+.leaflet-container img.leaflet-tile,
+.leaflet-tile-container img {
+  max-width: none !important;
+  height: auto !important;
+  display: inline !important;
+}
+.leaflet-container svg {
+  max-width: none !important;
+  display: inline !important;
+}
 
 @theme {
   --color-brand-teal: #004D40;

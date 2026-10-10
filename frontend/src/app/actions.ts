@@ -8,13 +8,16 @@ import { bookingRatelimit } from '@/lib/ratelimit'
 async function checkRateLimit(userId: string): Promise<boolean> {
   if (!bookingRatelimit) {
     console.warn('Upstash Redis rate limiting is not configured. Falling back to local memory cache (simulated).');
-    // Security Fix: Fail safe/fallback instead of failing open to prevent unrestricted spam
-    // In a real production app without Redis, you'd use a Map() or LRU cache here.
     return true; 
   }
   
-  const { success } = await bookingRatelimit.limit(userId);
-  return success;
+  try {
+    const { success } = await bookingRatelimit.limit(userId);
+    return success;
+  } catch (error) {
+    console.warn('Upstash Redis rate limiting failed, degrading gracefully:', error);
+    return true;
+  }
 }
 
 function generateBookingReference(): string {
@@ -276,102 +279,107 @@ export async function createTicketBooking(formData: FormData) {
 
 // --- Whole Vehicle Booking ---
 export async function createWholeVehicleBooking(formData: FormData) {
-  const supabase = await createClient()
-
-  // 1. Authenticate user
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return { success: false, error: 'AUTH_REQUIRED' }
-  }
-
-  // 2. Rate limit check
-  const isAllowed = await checkRateLimit(user.id)
-  if (!isAllowed) {
-    return { success: false, error: 'Too many booking attempts. Please wait before trying again.' }
-  }
-
-  // 3. Extract and validate inputs
-  const vehicleIdsRaw = formData.get('vehicleIds') as string
-  const travelDate = formData.get('travelDate') as string
-  const occasion = formData.get('occasion') as string
-
-  if (!vehicleIdsRaw || !travelDate || !occasion) {
-    return { success: false, error: 'Please select at least one bus, a travel date, and an occasion.' }
-  }
-
-  let vehicleIds: string[]
   try {
-    vehicleIds = JSON.parse(vehicleIdsRaw)
-  } catch {
-    return { success: false, error: 'Invalid vehicle selection.' }
-  }
+    const supabase = await createClient()
 
-  if (!Array.isArray(vehicleIds) || vehicleIds.length === 0 || vehicleIds.length > 5) {
-    return { success: false, error: 'Please select between 1 and 5 vehicles.' }
-  }
+    // 1. Authenticate user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return { success: false, error: 'AUTH_REQUIRED' }
+    }
 
-  // Validate UUID format
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  if (!vehicleIds.every(id => uuidRegex.test(id))) {
-    return { success: false, error: 'Invalid vehicle selection.' }
-  }
+    // 2. Rate limit check
+    const isAllowed = await checkRateLimit(user.id)
+    if (!isAllowed) {
+      return { success: false, error: 'Too many booking attempts. Please wait before trying again.' }
+    }
 
-  const travelDateObj = new Date(travelDate)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+    // 3. Extract and validate inputs
+    const vehicleIdsRaw = formData.get('vehicleIds') as string
+    const travelDate = formData.get('travelDate') as string
+    const occasion = formData.get('occasion') as string
 
-  if (isNaN(travelDateObj.getTime())) {
-    return { success: false, error: 'Invalid travel date provided.' }
-  }
+    if (!vehicleIdsRaw || !travelDate || !occasion) {
+      return { success: false, error: 'Please select at least one bus, a travel date, and an occasion.' }
+    }
 
-  if (travelDateObj < today) {
-    return { success: false, error: 'Travel date must be today or in the future.' }
-  }
+    let vehicleIds: string[]
+    try {
+      vehicleIds = JSON.parse(vehicleIdsRaw)
+    } catch {
+      return { success: false, error: 'Invalid vehicle selection.' }
+    }
 
-  // 4. Verify all vehicles exist and are active
-  const { data: vehicles, error: vehicleError } = await supabase
-    .from('vehicles')
-    .select('id, name, owner_id, users(whatsapp_number)')
-    .in('id', vehicleIds)
-    .eq('is_active', true)
-    .is('deleted_at', null)
+    if (!Array.isArray(vehicleIds) || vehicleIds.length === 0 || vehicleIds.length > 5) {
+      return { success: false, error: 'Please select between 1 and 5 vehicles.' }
+    }
 
-  if (vehicleError) {
-    return { success: false, error: 'Database error verifying vehicles.' }
-  }
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!vehicleIds.every(id => uuidRegex.test(id))) {
+      return { success: false, error: 'Invalid vehicle selection.' }
+    }
 
-  if (!vehicles || vehicles.length !== vehicleIds.length) {
-    return { success: false, error: 'One or more selected vehicles are not available.' }
-  }
+    const travelDateObj = new Date(travelDate)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-  // 5. Create atomic booking via RPC (Bypasses restrictive RLS on booking_vehicles)
-  const bookingReference = generateBookingReference()
+    if (isNaN(travelDateObj.getTime())) {
+      return { success: false, error: 'Invalid travel date provided.' }
+    }
 
-  const { error: rpcError } = await supabase.rpc('book_whole_vehicle_atomic', {
-    p_vehicle_ids: vehicleIds,
-    p_travel_date: travelDateObj.toISOString().split('T')[0],
-    p_occasion: occasion.trim(),
-    p_customer_id: user.id,
-    p_booking_reference: bookingReference
-  })
+    if (travelDateObj < today) {
+      return { success: false, error: 'Travel date must be today or in the future.' }
+    }
 
-  if (rpcError) {
-    return { success: false, error: 'Failed to create booking. Please try again.' }
-  }
+    // 4. Verify all vehicles exist and are active
+    const { data: vehicles, error: vehicleError } = await supabase
+      .from('vehicles')
+      .select('id, name, owner_id, users(whatsapp_number)')
+      .in('id', vehicleIds)
+      .eq('is_active', true)
+      .is('deleted_at', null)
 
-  revalidatePath('/')
+    if (vehicleError) {
+      return { success: false, error: 'Database error verifying vehicles.' }
+    }
 
-  // 7. Get first operator's WhatsApp for redirect
-  const firstVehicle = vehicles[0] as { users?: { whatsapp_number?: string } | null } | null | undefined
-  const operatorWhatsapp = firstVehicle?.users?.whatsapp_number || '+916002089037'
-  const vehicleNames = vehicles.map(v => v.name).join(', ')
+    if (!vehicles || vehicles.length !== vehicleIds.length) {
+      return { success: false, error: 'One or more selected vehicles are not available.' }
+    }
 
-  return {
-    success: true,
-    booking_reference: bookingReference,
-    operator_whatsapp: operatorWhatsapp,
-    vehicle_names: vehicleNames,
-    message: 'Whole vehicle booking submitted!'
+    // 5. Create atomic booking via RPC (Bypasses restrictive RLS on booking_vehicles)
+    const bookingReference = generateBookingReference()
+
+    const { error: rpcError } = await supabase.rpc('book_whole_vehicle_atomic', {
+      p_vehicle_ids: vehicleIds,
+      p_travel_date: travelDateObj.toISOString().split('T')[0],
+      p_occasion: occasion.trim(),
+      p_customer_id: user.id,
+      p_booking_reference: bookingReference
+    })
+
+    if (rpcError) {
+      return { success: false, error: 'Failed to create booking. Please try again.' }
+    }
+
+    revalidatePath('/')
+
+    // 7. Get first operator's WhatsApp for redirect
+    const firstVehicle = vehicles[0] as { users?: { whatsapp_number?: string } | null } | null | undefined
+    const operatorWhatsapp = firstVehicle?.users?.whatsapp_number || '+916002089037'
+    const vehicleNames = vehicles.map(v => v.name).join(', ')
+
+    return {
+      success: true,
+      booking_reference: bookingReference,
+      operator_whatsapp: operatorWhatsapp,
+      vehicle_names: vehicleNames,
+      message: 'Whole vehicle booking submitted!'
+    }
+  } catch (err) {
+    console.error('CRITICAL ERROR inside createWholeVehicleBooking:', err);
+    throw err;
   }
 }
 

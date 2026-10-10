@@ -258,7 +258,8 @@ export default function HomeClient({
         setSelectedBuses([]);
       }
       setBusResult(result);
-    } catch {
+    } catch (e) {
+      console.error('Error in createWholeVehicleBooking:', e);
       setBusResult({ success: false, error: 'An unexpected error occurred.' });
     }
     setBusLoading(false);
